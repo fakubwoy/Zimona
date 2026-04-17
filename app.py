@@ -280,6 +280,23 @@ def admin_category_delete(id):
     db.session.commit()
     flash('Category deleted.', 'success')
     return redirect(url_for('admin_categories'))
+@app.route('/admin/category/<int:id>/edit', methods=['POST'])
+def admin_category_edit(id):
+    cat = Category.query.get_or_404(id)
+    new_name = request.form.get('name', '').strip()
+    if not new_name:
+        flash('Category name cannot be empty.', 'warning')
+        return redirect(url_for('admin_categories'))
+    # check for duplicate name (case‑insensitive)
+    existing = Category.query.filter(func.lower(Category.name) == new_name.lower()).first()
+    if existing and existing.id != id:
+        flash('A category with that name already exists.', 'warning')
+    else:
+        cat.name = new_name
+        cat.slug = slugify(new_name)
+        db.session.commit()
+        flash('Category renamed.', 'success')
+    return redirect(url_for('admin_categories'))
 
 @app.route('/admin/category/<int:id>/upload-image', methods=['POST'])
 def admin_category_upload_image(id):
@@ -288,7 +305,12 @@ def admin_category_upload_image(id):
     if f and allowed_file(f.filename):
         ext = f.filename.rsplit('.', 1)[1].lower()
         filename = f"cat_{secrets.token_hex(6)}.{ext}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+        # Ensure assets/categories directory exists
+        cat_upload_dir = os.path.join('templates', 'assets', 'categories')
+        os.makedirs(cat_upload_dir, exist_ok=True)
+
+        filepath = os.path.join(cat_upload_dir, filename)
         f.save(filepath)
         compress_image(filepath)
         cat.image = filename
@@ -445,7 +467,7 @@ def api_products():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-@app.route('/assets/<filename>')
+@app.route('/assets/<path:filename>')
 def assets_file(filename):
     return send_from_directory(os.path.join('templates', 'assets'), filename)
 

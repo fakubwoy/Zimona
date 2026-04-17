@@ -592,7 +592,7 @@
         {% for cat in categories %}
         <a href="/search?q={{ cat.name }}" class="cat-photo-card">
             {% if cat.image %}
-            <img src="/uploads/{{ cat.image }}" alt="{{ cat.name }}" class="cat-photo-img" loading="lazy">
+            <img src="/assets/categories/{{ cat.image }}" alt="{{ cat.name }}" class="cat-photo-img" loading="lazy">
             {% else %}
             <div class="cat-photo-img cat-photo-fallback">
                 <span>◇</span>

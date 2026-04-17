@@ -17,7 +17,12 @@
     .category-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--border); transition: background 0.2s; }
     .category-row:last-child { border-bottom: none; }
     .category-row:hover { background: var(--ivory); }
-    .category-row-name { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 600; color: var(--charcoal); }
+    .edit-cat-form { flex: 1; margin-left: 16px; display: flex; gap: 8px; align-items: center; }
+    .edit-cat-input { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 600; color: var(--charcoal); background: transparent; border: 1px solid transparent; padding: 4px 8px; margin: -4px -8px; transition: border 0.2s; width: auto; min-width: 120px; }
+    .edit-cat-input:focus { border-color: var(--maroon); background: #fff; outline: none; }
+    .edit-save-btn { background: none; border: none; font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--maroon); cursor: pointer; padding: 4px 8px; font-weight: 500; transition: color 0.2s; }
+    .edit-save-btn:hover { color: var(--maroon-deep); text-decoration: underline; }
+
     .delete-btn { background: none; border: none; font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); cursor: pointer; padding: 0; transition: color 0.2s; font-weight: 500; }
     .delete-btn:hover { color: #C0392B; }
     .cat-thumb { width: 52px; height: 52px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
@@ -47,11 +52,16 @@
     {% for cat in categories %}
     <div class="category-row">
         {% if cat.image %}
-        <img src="/uploads/{{ cat.image }}" class="cat-thumb" alt="{{ cat.name }}">
+        <img src="/assets/categories/{{ cat.image }}" class="cat-thumb" alt="{{ cat.name }}">
         {% else %}
         <div class="cat-thumb-placeholder">◇</div>
         {% endif %}
-        <span class="category-row-name" style="flex:1; margin-left: 16px;">{{ cat.name }}</span>
+
+        <form action="/admin/category/{{ cat.id }}/edit" method="POST" class="edit-cat-form">
+            <input type="text" name="name" value="{{ cat.name }}" class="edit-cat-input" required>
+            <button type="submit" class="edit-save-btn">Save</button>
+        </form>
+
         <div class="cat-row-actions">
             <form action="/admin/category/{{ cat.id }}/upload-image" method="POST" enctype="multipart/form-data" style="display:inline;">
                 <label class="upload-label" for="img-{{ cat.id }}">
