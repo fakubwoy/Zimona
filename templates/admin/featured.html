@@ -1,0 +1,450 @@
+{% extends "base.html" %}
+{% block title %}Featured Products – Zimona Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        padding-bottom: 28px; border-bottom: 2px solid var(--maroon); margin-bottom: 40px;
+    }
+    .page-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--maroon); margin-bottom: 8px; font-weight: 500; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; }
+
+    .sections-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+
+    .section-panel {
+        background: #fff;
+        border: 1px solid var(--border);
+    }
+    .section-panel-header {
+        padding: 22px 28px 18px;
+        border-bottom: 2px solid var(--maroon);
+        display: flex; align-items: flex-end; justify-content: space-between;
+    }
+    .section-panel-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; }
+    .section-panel-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    .section-panel-count {
+        font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+        color: var(--maroon); font-weight: 600;
+    }
+
+    /* Selected list — fixed height, scrolls when items overflow */
+    .selected-list {
+        height: 260px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border);
+        box-sizing: border-box;
+    }
+    .selected-empty {
+        text-align: center; padding: 28px 0; font-size: 13px;
+        color: var(--muted); font-style: italic;
+    }
+    .selected-item {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+        cursor: grab;
+        user-select: none;
+        transition: background 0.2s;
+    }
+    .selected-item:last-child { border-bottom: none; }
+    .selected-item:active { cursor: grabbing; }
+    .selected-item.dragging { opacity: 0.45; background: var(--ivory); }
+    .selected-item.drag-over { border-top: 2px solid var(--maroon); }
+    .drag-handle {
+        color: var(--border); font-size: 16px; cursor: grab; flex-shrink: 0; padding: 0 2px;
+    }
+    .selected-thumb {
+        width: 44px; height: 44px; object-fit: cover;
+        border: 1px solid var(--border); flex-shrink: 0; background: var(--ivory);
+    }
+    .selected-thumb-placeholder {
+        width: 44px; height: 44px; background: var(--ivory); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Playfair Display', serif; font-size: 18px; color: var(--border); flex-shrink: 0;
+    }
+    .selected-info { flex: 1; min-width: 0; }
+    .selected-name { font-size: 13px; font-weight: 500; color: var(--charcoal); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .selected-price { font-size: 12px; color: var(--maroon); margin-top: 2px; }
+    .remove-btn {
+        background: none; border: none; cursor: pointer; color: var(--muted);
+        font-size: 18px; line-height: 1; padding: 4px; transition: color 0.2s; flex-shrink: 0;
+    }
+    .remove-btn:hover { color: #C0392B; }
+
+    /* Product picker */
+    .picker-header {
+        display: flex; align-items: center; gap: 10px;
+        padding: 14px 20px; border-bottom: 1px solid var(--border);
+        background: var(--ivory);
+    }
+    .picker-search {
+        flex: 1; background: #fff; border: 1px solid var(--border); padding: 9px 12px;
+        font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--charcoal);
+        outline: none; transition: border-color 0.2s;
+    }
+    .picker-search:focus { border-color: var(--maroon); }
+    .picker-search::placeholder { color: #C5BBB0; }
+    .picker-filter {
+        background: #fff; border: 1px solid var(--border); padding: 9px 12px;
+        font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--charcoal);
+        outline: none; cursor: pointer;
+    }
+
+    .picker-list {
+        max-height: 320px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+    }
+    .picker-item {
+        display: flex; align-items: center; gap: 12px;
+        padding: 10px 20px; cursor: pointer;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.15s;
+    }
+    .picker-item:last-child { border-bottom: none; }
+    .picker-item:hover { background: var(--ivory); }
+    .picker-item.is-selected { background: rgba(107,26,26,0.05); }
+    .picker-item.is-selected .picker-item-name { color: var(--maroon); }
+    .picker-check {
+        width: 18px; height: 18px; border: 1.5px solid var(--border);
+        border-radius: 3px; display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; transition: border-color 0.2s, background 0.2s;
+        background: #fff;
+    }
+    .picker-item.is-selected .picker-check {
+        border-color: var(--maroon); background: var(--maroon);
+    }
+    .picker-check svg { display: none; }
+    .picker-item.is-selected .picker-check svg { display: block; }
+    .picker-thumb {
+        width: 40px; height: 40px; object-fit: cover;
+        border: 1px solid var(--border); flex-shrink: 0; background: var(--ivory);
+    }
+    .picker-thumb-ph {
+        width: 40px; height: 40px; background: var(--ivory); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Playfair Display', serif; font-size: 16px; color: var(--border); flex-shrink: 0;
+    }
+    .picker-item-name { font-size: 13px; font-weight: 400; color: var(--charcoal); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .picker-item-cat { font-size: 11px; color: var(--muted); }
+    .picker-item-price { font-size: 12px; color: var(--maroon); flex-shrink: 0; font-weight: 500; }
+
+    .panel-footer {
+        padding: 16px 20px;
+        background: var(--ivory);
+        border-top: 1px solid var(--border);
+        display: flex; justify-content: flex-end; gap: 10px; align-items: center;
+    }
+    .save-btn {
+        background: var(--maroon); color: #fff; border: none; cursor: pointer;
+        padding: 11px 28px; font-family: 'DM Sans', sans-serif; font-size: 12px;
+        font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+        transition: background 0.25s;
+    }
+    .save-btn:hover { background: var(--maroon-deep); }
+    .save-btn:disabled { background: var(--border); cursor: not-allowed; }
+    .save-status { font-size: 12px; color: var(--muted); }
+    .save-status.ok { color: #2e7d32; }
+    .save-status.err { color: #C0392B; }
+
+    .picker-none { padding: 28px; text-align: center; font-size: 13px; color: var(--muted); font-style: italic; }
+
+    @media (max-width: 900px) {
+        .sections-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="page-eyebrow">Administration</p>
+        <h1 class="page-title">Featured Products</h1>
+    </div>
+    <a href="/admin" class="btn-outline">&larr; Back to Dashboard</a>
+</div>
+
+<p style="font-size:13px;color:var(--muted);margin-bottom:36px;max-width:640px;">
+    Manually curate which products appear in <strong>Top Sellers</strong> and <strong>New Arrivals</strong> on the homepage.
+    Drag items in the selected list to reorder them. Changes are saved instantly.
+</p>
+
+<div class="sections-grid">
+
+    <!-- TOP SELLERS -->
+    <div class="section-panel" id="panel-top-sellers">
+        <div class="section-panel-header">
+            <div>
+                <div class="section-panel-title">Top Sellers</div>
+                <div class="section-panel-sub">Shown in the "Our Top Sellers" section</div>
+            </div>
+            <span class="section-panel-count" id="ts-count">{{ top_seller_ids|length }} selected</span>
+        </div>
+
+        <!-- Selected / ordered list -->
+        <div class="selected-list" id="ts-selected-list">
+            <div class="selected-empty" id="ts-empty" style="{{ 'display:none' if top_seller_ids else '' }}">
+                No products selected — pick from the list below
+            </div>
+        </div>
+
+        <!-- Product picker -->
+        <div class="picker-header">
+            <input class="picker-search" type="text" placeholder="Search products…" id="ts-search">
+            <select class="picker-filter" id="ts-cat-filter">
+                <option value="">All categories</option>
+                {% for cat in all_products | map(attribute='category') | select | unique | list | sort(attribute='name') %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="picker-list" id="ts-picker-list"></div>
+
+        <div class="panel-footer">
+            <span class="save-status" id="ts-status"></span>
+            <button class="save-btn" id="ts-save-btn" onclick="saveSection('top_sellers')">Save Top Sellers</button>
+        </div>
+    </div>
+
+    <!-- NEW ARRIVALS -->
+    <div class="section-panel" id="panel-new-arrivals">
+        <div class="section-panel-header">
+            <div>
+                <div class="section-panel-title">New Arrivals</div>
+                <div class="section-panel-sub">Shown in the "Our New Products" section</div>
+            </div>
+            <span class="section-panel-count" id="na-count">{{ new_arrival_ids|length }} selected</span>
+        </div>
+
+        <div class="selected-list" id="na-selected-list">
+            <div class="selected-empty" id="na-empty" style="{{ 'display:none' if new_arrival_ids else '' }}">
+                No products selected — pick from the list below
+            </div>
+        </div>
+
+        <div class="picker-header">
+            <input class="picker-search" type="text" placeholder="Search products…" id="na-search">
+            <select class="picker-filter" id="na-cat-filter">
+                <option value="">All categories</option>
+                {% for cat in all_products | map(attribute='category') | select | unique | list | sort(attribute='name') %}
+                <option value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="picker-list" id="na-picker-list"></div>
+
+        <div class="panel-footer">
+            <span class="save-status" id="na-status"></span>
+            <button class="save-btn" id="na-save-btn" onclick="saveSection('new_arrivals')">Save New Arrivals</button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── All product data from server ──
+const ALL_PRODUCTS = [
+    {% for p in all_products %}
+    {
+        id: {{ p.id }},
+        name: {{ p.name | tojson }},
+        price: {{ p.price | float }},
+        category_id: {{ p.category_id or 'null' }},
+        category_name: {{ (p.category.name if p.category else '') | tojson }},
+        thumb: {{ (('/uploads/' + p.images[0]) if p.images else '') | tojson }}
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+];
+
+// ── Initial selections from server ──
+const INIT = {
+    top_sellers:   {{ top_seller_ids | tojson }},
+    new_arrivals:  {{ new_arrival_ids | tojson }}
+};
+
+// ── State ──
+const state = {
+    top_sellers:  [...INIT.top_sellers],
+    new_arrivals: [...INIT.new_arrivals]
+};
+
+// ── Section config ──
+const SECTIONS = {
+    top_sellers:  { prefix: 'ts', label: 'top_sellers' },
+    new_arrivals: { prefix: 'na', label: 'new_arrivals' }
+};
+
+// ── Format price ──
+function fmt(n) { return '₹' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:0}); }
+
+// ── Thumb HTML ──
+function thumbHTML(src, name, cls='selected-thumb') {
+    if (src) return `<img src="${src}" alt="${name}" class="${cls}">`;
+    return cls === 'selected-thumb'
+        ? `<div class="selected-thumb-placeholder">◇</div>`
+        : `<div class="picker-thumb-ph">◇</div>`;
+}
+
+// ── Drag & Drop for selected list ──
+let dragSrc = null;
+function makeDraggable(el, section) {
+    el.draggable = true;
+    el.addEventListener('dragstart', e => { dragSrc = el; el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    el.addEventListener('dragend', () => { el.classList.remove('dragging'); document.querySelectorAll('.drag-over').forEach(x => x.classList.remove('drag-over')); });
+    el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+    el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+    el.addEventListener('drop', e => {
+        e.preventDefault(); el.classList.remove('drag-over');
+        if (!dragSrc || dragSrc === el) return;
+        const list = el.parentElement;
+        const items = [...list.querySelectorAll('.selected-item')];
+        const fromIdx = items.indexOf(dragSrc);
+        const toIdx = items.indexOf(el);
+        if (fromIdx < toIdx) list.insertBefore(dragSrc, el.nextSibling);
+        else list.insertBefore(dragSrc, el);
+        // Sync state order from DOM
+        const newOrder = [...list.querySelectorAll('.selected-item')].map(x => parseInt(x.dataset.id));
+        state[section] = newOrder;
+        updateCount(section);
+    });
+}
+
+// ── Render selected list ──
+function renderSelected(section) {
+    const cfg = SECTIONS[section];
+    const listEl = document.getElementById(`${cfg.prefix}-selected-list`);
+    const emptyEl = document.getElementById(`${cfg.prefix}-empty`);
+    const ids = state[section];
+    // remove existing items
+    listEl.querySelectorAll('.selected-item').forEach(x => x.remove());
+    if (ids.length === 0) { emptyEl.style.display = ''; return; }
+    emptyEl.style.display = 'none';
+    ids.forEach(id => {
+        const p = ALL_PRODUCTS.find(x => x.id === id);
+        if (!p) return;
+        const div = document.createElement('div');
+        div.className = 'selected-item';
+        div.dataset.id = p.id;
+        div.innerHTML = `
+            <span class="drag-handle" title="Drag to reorder">⠿</span>
+            ${thumbHTML(p.thumb, p.name, 'selected-thumb')}
+            <div class="selected-info">
+                <div class="selected-name">${p.name}</div>
+                <div class="selected-price">${fmt(p.price)} · ${p.category_name || '—'}</div>
+            </div>
+            <button class="remove-btn" title="Remove" onclick="toggleProduct(${p.id}, '${section}')">×</button>`;
+        listEl.appendChild(div);
+        makeDraggable(div, section);
+    });
+}
+
+// ── Render picker list ──
+function renderPicker(section, filter='', catFilter='') {
+    const cfg = SECTIONS[section];
+    const listEl = document.getElementById(`${cfg.prefix}-picker-list`);
+    listEl.innerHTML = '';
+    const q = filter.toLowerCase().trim();
+    let shown = 0;
+    ALL_PRODUCTS.forEach(p => {
+        if (q && !p.name.toLowerCase().includes(q) && !p.category_name.toLowerCase().includes(q)) return;
+        if (catFilter && String(p.category_id) !== catFilter) return;
+        shown++;
+        const selected = state[section].includes(p.id);
+        const div = document.createElement('div');
+        div.className = `picker-item${selected ? ' is-selected' : ''}`;
+        div.dataset.id = p.id;
+        div.innerHTML = `
+            <div class="picker-check">
+                <svg width="11" height="9" fill="none" viewBox="0 0 11 9"><path d="M1 4.5l3 3 6-7" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            ${thumbHTML(p.thumb, p.name, 'picker-thumb')}
+            <div style="flex:1;min-width:0;">
+                <div class="picker-item-name">${p.name}</div>
+                <div class="picker-item-cat">${p.category_name || '—'}</div>
+            </div>
+            <div class="picker-item-price">${fmt(p.price)}</div>`;
+        div.addEventListener('click', () => toggleProduct(p.id, section));
+        listEl.appendChild(div);
+    });
+    if (shown === 0) {
+        listEl.innerHTML = '<div class="picker-none">No products match your search.</div>';
+    }
+}
+
+// ── Toggle product in section ──
+function toggleProduct(id, section) {
+    const idx = state[section].indexOf(id);
+    if (idx === -1) state[section].push(id);
+    else state[section].splice(idx, 1);
+    const cfg = SECTIONS[section];
+    renderSelected(section);
+    // refresh picker item
+    const pickerItem = document.querySelector(`#${cfg.prefix}-picker-list .picker-item[data-id="${id}"]`);
+    if (pickerItem) {
+        const sel = state[section].includes(id);
+        pickerItem.classList.toggle('is-selected', sel);
+    }
+    updateCount(section);
+}
+
+// ── Update count badge ──
+function updateCount(section) {
+    const cfg = SECTIONS[section];
+    const n = state[section].length;
+    document.getElementById(`${cfg.prefix}-count`).textContent = `${n} selected`;
+}
+
+// ── Save to server ──
+async function saveSection(section) {
+    const cfg = SECTIONS[section];
+    const btn = document.getElementById(`${cfg.prefix}-save-btn`);
+    const statusEl = document.getElementById(`${cfg.prefix}-status`);
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    statusEl.className = 'save-status';
+    statusEl.textContent = '';
+    try {
+        const res = await fetch('/admin/featured/reorder', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ section, ids: state[section] })
+        });
+        const data = await res.json();
+        if (data.ok) {
+            statusEl.className = 'save-status ok';
+            statusEl.textContent = `✓ Saved ${data.count} product${data.count !== 1 ? 's' : ''}`;
+        } else throw new Error('Server error');
+    } catch (e) {
+        statusEl.className = 'save-status err';
+        statusEl.textContent = '✗ Save failed';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = section === 'top_sellers' ? 'Save Top Sellers' : 'Save New Arrivals';
+        setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    }
+}
+
+// ── Search & filter wiring ──
+function wireSection(section) {
+    const cfg = SECTIONS[section];
+    const searchEl = document.getElementById(`${cfg.prefix}-search`);
+    const catEl = document.getElementById(`${cfg.prefix}-cat-filter`);
+    function refresh() { renderPicker(section, searchEl.value, catEl.value); }
+    searchEl.addEventListener('input', refresh);
+    catEl.addEventListener('change', refresh);
+}
+
+// ── Init ──
+Object.keys(SECTIONS).forEach(section => {
+    renderSelected(section);
+    renderPicker(section);
+    wireSection(section);
+    updateCount(section);
+});
+</script>
+{% endblock %}

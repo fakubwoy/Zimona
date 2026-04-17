@@ -3,112 +3,197 @@
 
 {% block extra_head %}
 <style>
-    .search-header {
+    /* ── Search Hero ── */
+    .search-hero {
         background: linear-gradient(135deg, var(--maroon-deep) 0%, var(--maroon) 100%);
-        padding: 48px 40px;
-        margin-bottom: 48px;
+        padding: 56px 40px 48px;
     }
-    .search-header-inner { max-width: 1400px; margin: 0 auto; }
-    .search-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.65); margin-bottom: 10px; }
-    .search-title { font-family: 'Playfair Display', serif; font-size: 38px; font-weight: 700; color: #fff; margin-bottom: 6px; }
-    .search-title em { font-style: italic; color: rgba(255,255,255,0.8); }
-    .search-meta { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 8px; }
+    .search-hero-inner { max-width: 1400px; margin: 0 auto; }
+    .search-eyebrow {
+        font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase;
+        color: rgba(255,255,255,0.55); margin-bottom: 14px;
+    }
+    .search-hero-title {
+        font-family: 'Playfair Display', serif; font-size: 42px; font-weight: 700;
+        color: #fff; margin-bottom: 28px; line-height: 1.1;
+    }
+    .search-hero-title em { font-style: italic; color: rgba(255,255,255,0.75); }
 
-    .search-body { max-width: 1400px; margin: 0 auto; padding: 0 40px 64px; }
+    /* ── Live Search Bar ── */
+    .live-search-wrap { position: relative; max-width: 640px; }
+    .live-search-bar {
+        display: flex;
+        border: 2px solid rgba(255,255,255,0.35);
+        background: rgba(255,255,255,0.12);
+        transition: border-color 0.2s, background 0.2s;
+    }
+    .live-search-bar:focus-within {
+        border-color: rgba(255,255,255,0.8);
+        background: rgba(255,255,255,0.18);
+    }
+    .live-search-input {
+        flex: 1; background: transparent; border: none;
+        padding: 16px 20px;
+        font-family: 'DM Sans', sans-serif; font-size: 15px; color: #fff; outline: none;
+    }
+    .live-search-input::placeholder { color: rgba(255,255,255,0.45); }
+    .live-search-btn {
+        background: rgba(255,255,255,0.15); color: #fff; border: none;
+        border-left: 1px solid rgba(255,255,255,0.25);
+        padding: 16px 24px; font-family: 'DM Sans', sans-serif;
+        font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+        cursor: pointer; transition: background 0.2s;
+    }
+    .live-search-btn:hover { background: rgba(255,255,255,0.25); }
 
-    .empty-state { text-align: center; padding: 80px 0; }
-    .empty-ornament { font-family: 'Playfair Display', serif; font-size: 64px; color: var(--border); margin-bottom: 20px; line-height: 1; }
-    .empty-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 600; margin-bottom: 10px; }
-    .empty-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+    /* ── Suggestions Dropdown ── */
+    .suggestions-dropdown {
+        position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+        background: #fff; border: 1px solid var(--border);
+        box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+        z-index: 200; max-height: 440px; overflow-y: auto;
+        display: none; scrollbar-width: thin;
+    }
+    .suggestions-dropdown.open { display: block; }
+    .suggestion-item {
+        display: flex; align-items: center; gap: 14px;
+        padding: 12px 16px; text-decoration: none; color: var(--charcoal);
+        border-bottom: 1px solid var(--border); transition: background 0.15s;
+    }
+    .suggestion-item:last-child { border-bottom: none; }
+    .suggestion-item:hover { background: var(--ivory); }
+    .sug-thumb { width: 48px; height: 48px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; background: var(--ivory); }
+    .sug-thumb-ph {
+        width: 48px; height: 48px; background: var(--ivory); border: 1px solid var(--border);
+        flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+        font-family: 'Playfair Display', serif; font-size: 18px; color: var(--border);
+    }
+    .sug-info { flex: 1; min-width: 0; }
+    .sug-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 3px; }
+    .sug-meta { font-size: 11px; color: var(--muted); }
+    .sug-price { font-size: 13px; color: var(--maroon); font-weight: 500; flex-shrink: 0; }
+    .sug-footer {
+        padding: 12px 16px; text-align: center; font-size: 12px; font-weight: 600;
+        letter-spacing: 0.1em; text-transform: uppercase; color: var(--maroon);
+        cursor: pointer; background: var(--ivory); border-top: 1px solid var(--border);
+    }
+    .sug-footer:hover { background: rgba(107,26,26,0.06); }
+    .sug-loading, .sug-none { padding: 20px 16px; text-align: center; font-size: 13px; color: var(--muted); font-style: italic; }
 
-    .search-form-large { display: flex; max-width: 520px; margin: 0 auto; border: 2px solid var(--maroon); }
-    .search-form-large input { flex: 1; background: #fff; border: none; padding: 14px 18px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--charcoal); outline: none; }
-    .search-form-large input::placeholder { color: #C5BBB0; }
-    .search-form-large button { background: var(--maroon); color: #fff; border: none; padding: 14px 26px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 0.25s; }
-    .search-form-large button:hover { background: var(--maroon-deep); }
+    /* ── Results area ── */
+    .search-body { max-width: 1400px; margin: 0 auto; padding: 48px 40px 64px; }
+    .results-meta {
+        font-size: 13px; color: var(--muted); margin-bottom: 32px;
+        padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    }
+    .results-meta strong { color: var(--charcoal); }
 
     .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
-
-    .product-card { text-decoration: none; color: inherit; display: block; background: #fff; border: 1px solid var(--border); transition: border-color 0.5s ease; }
+    .product-card { text-decoration: none; color: inherit; display: block; background: #fff; border: 1px solid var(--border); transition: border-color 0.4s ease; }
     .product-card:hover { border-color: var(--maroon); }
-
-    /* Image container — all layers sit on top of each other */
     .product-img { aspect-ratio: 1; overflow: hidden; position: relative; background: var(--ivory); }
-
-    /* Primary image — always visible, never moves */
     .product-img .img-primary { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-
-    /* Secondary image — crossfades in on hover */
     .product-img .img-secondary { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.65s ease; }
     .product-card:hover .img-secondary { opacity: 1; }
-
-    /* Placeholder when no images at all */
     .product-img-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
     .product-img-placeholder span { font-family: 'Playfair Display', serif; font-size: 48px; color: var(--border); }
-
-    /* Info overlay — shown on hover when there's no secondary image */
     .product-img .img-overlay {
-        position: absolute; inset: 0;
-        background: rgba(250, 246, 240, 0.92);
+        position: absolute; inset: 0; background: rgba(250, 246, 240, 0.92);
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 10px;
-        opacity: 0;
-        transition: opacity 0.5s ease;
-        padding: 24px;
-        text-align: center;
+        gap: 10px; opacity: 0; transition: opacity 0.5s ease; padding: 24px; text-align: center;
     }
     .product-card:hover .img-overlay { opacity: 1; }
     .img-overlay-rule { width: 32px; height: 1px; background: var(--maroon); opacity: 0.5; }
     .img-overlay-name { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: var(--charcoal); line-height: 1.35; }
-    .img-overlay-price { font-size: 13px; letter-spacing: 0.06em; color: var(--maroon); font-weight: 400; }
+    .img-overlay-price { font-size: 13px; letter-spacing: 0.06em; color: var(--maroon); }
     .img-overlay-cta { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
-
     .product-badge { position: absolute; top: 10px; left: 10px; background: var(--maroon); color: #fff; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; z-index: 2; }
     .product-info { padding: 14px 16px 18px; }
     .product-name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; line-height: 1.35; margin-bottom: 6px; transition: color 0.4s ease; }
     .product-card:hover .product-name { color: var(--maroon); }
     .product-price { font-size: 14px; font-weight: 400; color: var(--maroon); }
+
+    /* ── Empty state ── */
+    .empty-state { text-align: center; padding: 80px 0; }
+    .empty-ornament { font-family: 'Playfair Display', serif; font-size: 64px; color: var(--border); margin-bottom: 20px; line-height: 1; }
+    .empty-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 600; margin-bottom: 10px; }
+    .empty-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+
+    @media (max-width: 1100px) { .products-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 760px) {
+        .products-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        .search-hero { padding: 36px 20px 32px; }
+        .search-body { padding: 28px 20px 48px; }
+        .search-hero-title { font-size: 28px; }
+    }
 </style>
 {% endblock %}
 
 {% block main_class %}{% endblock %}
 
 {% block content %}
-<div class="search-header">
-    <div class="search-header-inner">
-        <p class="search-eyebrow">{% if query %}Search Results{% else %}Collections{% endif %}</p>
-        <h1 class="search-title">
-            {% if query %}Showing results for <em>"{{ query }}"</em>
-            {% else %}All Silver Pieces{% endif %}
+<div class="search-hero">
+    <div class="search-hero-inner">
+        <p class="search-eyebrow">Collections</p>
+        <h1 class="search-hero-title">
+            {% if query %}Results for <em>"{{ query }}"</em>
+            {% else %}Discover Our Silver Pieces{% endif %}
         </h1>
-        {% if query and products %}<p class="search-meta">{{ products|length }} piece{{ 's' if products|length != 1 else '' }} found</p>{% endif %}
+
+        <div class="live-search-wrap">
+            <form action="/search" method="get" autocomplete="off" id="searchForm">
+                <div class="live-search-bar">
+                    <input
+                        class="live-search-input"
+                        type="text"
+                        name="q"
+                        id="liveSearchInput"
+                        placeholder="Search rings, necklaces, silver…"
+                        value="{{ query }}"
+                        spellcheck="false"
+                    >
+                    <button type="submit" class="live-search-btn">Search</button>
+                </div>
+            </form>
+            <div class="suggestions-dropdown" id="suggestionsDropdown"></div>
+        </div>
     </div>
 </div>
 
 <div class="search-body">
-{% if not query %}
-<div class="empty-state">
-    <div class="empty-ornament">◈</div>
-    <h2 class="empty-title">Discover Your Perfect Silver Piece</h2>
-    <p class="empty-sub">Search our collection by name, material, or style</p>
-    <form action="/search" method="get" class="search-form-large">
-        <input type="text" name="q" placeholder="e.g. silver ring, pearl necklace…">
-        <button type="submit">Search</button>
-    </form>
-</div>
-
-{% elif products %}
-<div class="products-grid">
-    {% for p in products %}
-    <a href="/product/{{ p.slug }}" class="product-card">
-        <div class="product-img">
-            {% if p.images %}
-                <img class="img-primary" src="/uploads/{{ p.images[0] }}" alt="{{ p.name }}" loading="lazy">
-                {% if p.images|length > 1 %}
-                    {# Secondary image — crossfades in on hover #}
-                    <img class="img-secondary" src="/uploads/{{ p.images[1] }}" alt="{{ p.name }}" loading="lazy">
+{% set has_filters = query or min_price is not none or max_price is not none %}
+{% if has_filters %}
+    {% if products %}
+    <p class="results-meta">
+        <strong>{{ products|length }}</strong> piece{{ 's' if products|length != 1 else '' }}
+        {% if query %}found for <strong>"{{ query }}"</strong>{% endif %}
+        {% if min_price is not none and max_price is not none %}
+            priced between ₹{{ "{:,.0f}".format(min_price) }} and ₹{{ "{:,.0f}".format(max_price) }}
+        {% elif min_price is not none %}
+            priced ₹{{ "{:,.0f}".format(min_price) }} and above
+        {% elif max_price is not none %}
+            priced ₹{{ "{:,.0f}".format(max_price) }} and below
+        {% endif %}
+    </p>
+    <div class="products-grid">
+        {% for p in products %}
+        <a href="/product/{{ p.slug }}" class="product-card">
+            <div class="product-img">
+                {% if p.images %}
+                    <img class="img-primary" src="/uploads/{{ p.images[0] }}" alt="{{ p.name }}" loading="lazy">
+                    {% if p.images|length > 1 %}
+                        <img class="img-secondary" src="/uploads/{{ p.images[1] }}" alt="{{ p.name }}" loading="lazy">
+                    {% else %}
+                        <div class="img-overlay">
+                            <div class="img-overlay-rule"></div>
+                            <span class="img-overlay-name">{{ p.name }}</span>
+                            <span class="img-overlay-price">₹{{ "{:,.0f}".format(p.price) }}</span>
+                            <div class="img-overlay-rule"></div>
+                            <span class="img-overlay-cta">View Piece</span>
+                        </div>
+                    {% endif %}
                 {% else %}
-                    {# No secondary image — show elegant info overlay instead #}
+                    <div class="product-img-placeholder"><span>◇</span></div>
                     <div class="img-overlay">
                         <div class="img-overlay-rule"></div>
                         <span class="img-overlay-name">{{ p.name }}</span>
@@ -117,41 +202,126 @@
                         <span class="img-overlay-cta">View Piece</span>
                     </div>
                 {% endif %}
+                <span class="product-badge">{{ (p.tags or '925 Silver').split(',')[0].strip() }}</span>
+                <button
+                    class="wishlist-heart"
+                    data-id="{{ p.id }}"
+                    onclick="event.preventDefault(); toggleWishlist('{{ p.id }}', '{{ p.name|replace("'", "\\'") }}', '{{ p.price }}', '{{ ("/uploads/" + p.images[0]) if p.images else "" }}', this)"
+                    title="Add to Wishlist">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                </button>
+            </div>
+            <div class="product-info">
+                <h3 class="product-name">{{ p.name }}</h3>
+                <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
+                <button onclick="event.preventDefault();addToCart('{{ p.id }}','{{ p.name|replace("'","\\'") }}','{{ p.price }}','{{ ("/uploads/" + p.images[0]) if p.images else "" }}')" style="margin-top:10px;width:100%;background:var(--maroon);color:#fff;border:none;padding:10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:background 0.25s;">Add to Cart</button>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-ornament">◇</div>
+        <h2 class="empty-title">No pieces found</h2>
+        <p class="empty-sub">
+            {% if query %}
+                Try different terms — a material, style, or occasion.
             {% else %}
-                <div class="product-img-placeholder"><span>◇</span></div>
-                <div class="img-overlay">
-                    <div class="img-overlay-rule"></div>
-                    <span class="img-overlay-name">{{ p.name }}</span>
-                    <span class="img-overlay-price">₹{{ "{:,.0f}".format(p.price) }}</span>
-                    <div class="img-overlay-rule"></div>
-                    <span class="img-overlay-cta">View Piece</span>
-                </div>
+                No products match the selected price range.
             {% endif %}
-            <span class="product-badge">{{ (p.tags or '925 Silver').split(',')[0].strip() }}</span>
-            <button
-                class="wishlist-heart"
-                data-id="{{ p.id }}"
-                onclick="event.preventDefault(); toggleWishlist('{{ p.id }}', '{{ p.name|replace("'", "\\'") }}', '{{ p.price }}', '{{ ("/uploads/" + p.images[0]) if p.images else "" }}', this)"
-                title="Add to Wishlist">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-            </button>
-        </div>
-        <div class="product-info">
-            <h3 class="product-name">{{ p.name }}</h3>
-            <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
-            <button onclick="event.preventDefault();addToCart('{{ p.id }}','{{ p.name|replace("'","\\'") }}','{{ p.price }}','{{ ("/uploads/" + p.images[0]) if p.images else "" }}')" style="margin-top:10px;width:100%;background:var(--maroon);color:#fff;border:none;padding:10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:background 0.25s;">Add to Cart</button>
-        </div>
-    </a>
-    {% endfor %}
-</div>
-
+        </p>
+        <a href="/search" class="btn-outline">Browse all pieces</a>
+    </div>
+    {% endif %}
 {% else %}
 <div class="empty-state">
-    <div class="empty-ornament">◇</div>
-    <h2 class="empty-title">No pieces found</h2>
-    <p class="empty-sub">Try searching with different terms — perhaps a material, style, or occasion.</p>
-    <a href="/search" class="btn-outline">Browse all pieces</a>
+    <div class="empty-ornament">◈</div>
+    <h2 class="empty-title">What are you looking for?</h2>
+    <p class="empty-sub">Start typing above — results appear as you type.</p>
 </div>
 {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const input = document.getElementById('liveSearchInput');
+    const dropdown = document.getElementById('suggestionsDropdown');
+    if (!input || !dropdown) return;
+
+    let debounceTimer = null;
+    let lastQuery = '';
+    let currentController = null;
+
+    function fmt(n) {
+        return '₹' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    }
+
+    function renderSuggestions(items, q) {
+        if (items.length === 0) {
+            dropdown.innerHTML = `<div class="sug-none">No results for "${q}"</div>`;
+            dropdown.classList.add('open');
+            return;
+        }
+        let html = items.map(p => `
+            <a href="/product/${p.slug}" class="suggestion-item">
+                ${p.thumb
+                    ? `<img class="sug-thumb" src="${p.thumb}" alt="${p.name}">`
+                    : `<div class="sug-thumb-ph">◇</div>`}
+                <div class="sug-info">
+                    <div class="sug-name">${p.name}</div>
+                    <div class="sug-meta">${p.category || ''}${p.tags ? ' · ' + p.tags : ''}</div>
+                </div>
+                <div class="sug-price">${fmt(p.price)}</div>
+            </a>`).join('');
+        html += `<div class="sug-footer" onclick="document.getElementById('searchForm').submit()">See all results for "${q}" →</div>`;
+        dropdown.innerHTML = html;
+        dropdown.classList.add('open');
+    }
+
+    async function fetchSuggestions(q) {
+        if (currentController) currentController.abort();
+        currentController = new AbortController();
+        dropdown.innerHTML = '<div class="sug-loading">Searching…</div>';
+        dropdown.classList.add('open');
+        try {
+            const res = await fetch(`/api/search?q=${encodeURIComponent(q)}`, { signal: currentController.signal });
+            const data = await res.json();
+            renderSuggestions(data, q);
+        } catch(e) {
+            if (e.name !== 'AbortError') dropdown.classList.remove('open');
+        }
+    }
+
+    input.addEventListener('input', () => {
+        const q = input.value.trim();
+        if (q.length < 2) {
+            dropdown.classList.remove('open');
+            lastQuery = '';
+            return;
+        }
+        if (q === lastQuery) return;
+        lastQuery = q;
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => fetchSuggestions(q), 220);
+    });
+
+    document.addEventListener('click', e => {
+        if (!input.closest('.live-search-wrap').contains(e.target)) {
+            dropdown.classList.remove('open');
+        }
+    });
+
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Escape') dropdown.classList.remove('open');
+    });
+
+    input.addEventListener('focus', () => {
+        if (input.value.trim().length >= 2 && dropdown.children.length > 0) {
+            dropdown.classList.add('open');
+        }
+    });
+})();
+</script>
 {% endblock %}

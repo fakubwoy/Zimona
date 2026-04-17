@@ -265,7 +265,7 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Sync wishlist button label for this product
+        // --- Wishlist button sync for this product ---
         const wBtn = document.querySelector('.wishlist-heart-detail[data-id="{{ product.id }}"]');
         if (wBtn) {
             const label = document.getElementById('wishlistBtnLabel');
@@ -280,8 +280,9 @@
             syncDetailHeart();
             wBtn.addEventListener('click', () => setTimeout(syncDetailHeart, 10));
         }
-    });
 
+        // --- Image Carousel ---
+        const track = document.getElementById('carouselTrack');
         if (!track) return;
 
         const slides = track.querySelectorAll('.carousel-slide');
@@ -294,10 +295,8 @@
 
         function goToSlide(index) {
             currentIndex = index;
-            // Slide the main image
             track.style.transform = `translateX(-${currentIndex * 100}%)`;
 
-            // Update active thumbnail state
             thumbs.forEach((th, i) => {
                 if (i === currentIndex) th.classList.add('active');
                 else th.classList.remove('active');

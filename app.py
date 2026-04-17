@@ -88,17 +88,18 @@ class Category(db.Model):
                 db.session.add(Category(name=name, slug=slugify(name), spec_schema=schema))
         db.session.commit()
 class Settings(db.Model):
-    key = db.Column(db.String(100), primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)          # ← new auto‑increment primary key
+    key = db.Column(db.String(100), unique=True, nullable=False)  # ← key is now unique, not PK
     value = db.Column(db.JSON)
 
     @staticmethod
     def get(key, default=None):
-        row = Settings.query.get(key)
+        row = Settings.query.filter_by(key=key).first()   # ← use filter_by, not .get()
         return row.value if row else default
 
     @staticmethod
     def set(key, value):
-        row = Settings.query.get(key)
+        row = Settings.query.filter_by(key=key).first()   # ← use filter_by
         if row:
             row.value = value
         else:
@@ -189,19 +190,41 @@ def seed_sample_products():
 @app.route('/')
 def index():
     categories = Category.query.all()
-    featured = Product.query.order_by(Product.created.desc()).limit(8).all()
+
+    # Top Sellers: use curated IDs if set, else fall back to recent 8
+    top_seller_ids = Settings.get('top_seller_ids', [])
+    if top_seller_ids:
+        top_sellers = Product.query.filter(Product.id.in_(top_seller_ids)).all()
+        # preserve order
+        id_order = {pid: i for i, pid in enumerate(top_seller_ids)}
+        top_sellers = sorted(top_sellers, key=lambda p: id_order.get(p.id, 999))
+    else:
+        top_sellers = Product.query.order_by(Product.created.desc()).limit(8).all()
+
+    # New Arrivals: use curated IDs if set, else fall back to latest 4
+    new_arrival_ids = Settings.get('new_arrival_ids', [])
+    if new_arrival_ids:
+        new_arrivals = Product.query.filter(Product.id.in_(new_arrival_ids)).all()
+        id_order2 = {pid: i for i, pid in enumerate(new_arrival_ids)}
+        new_arrivals = sorted(new_arrivals, key=lambda p: id_order2.get(p.id, 999))
+    else:
+        new_arrivals = Product.query.order_by(Product.created.desc()).limit(4).all()
+
+    featured = top_sellers  # kept for backward compat with template
+
     brand_promises = Settings.get('brand_promises', [
         {'icon': '925', 'title': 'Fine Silver Jewellery'},
         {'icon': '✦', 'title': '100% Genuine Products'},
         {'icon': '◈', 'title': 'Always Cadmium Free'},
     ])
     budget_ranges = Settings.get('budget_ranges', [
-        {'label': 'Gifts Under ₹1499', 'url': '/search?q=silver'},
-        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?q=silver'},
-        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?q=silver'},
-        {'label': 'Gifts Above ₹4999', 'url': '/search?q=silver'},
+        {'label': 'Gifts Under ₹1499', 'url': '/search?min_price=0&max_price=1499'},
+        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?min_price=1499&max_price=2499'},
+        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?min_price=2499&max_price=4999'},
+        {'label': 'Gifts Above ₹4999', 'url': '/search?min_price=4999'},
     ])
     return render_template('index.html', categories=categories, products=featured,
+                           new_arrivals=new_arrivals,
                            brand_promises=brand_promises, budget_ranges=budget_ranges)
 
 @app.route('/product/<slug>')
@@ -212,35 +235,84 @@ def product_detail(slug):
 @app.route('/search')
 def search():
     q = request.args.get('q', '').strip()
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+
     products = []
-    if q:
-        # Word-boundary aware: match query as a whole word to avoid
-        # "rings" matching "earrings". We fetch candidates via ILIKE then
-        # filter in Python using a word-boundary regex.
-        import re as _re
-        pattern = _re.compile(r'(?<![a-zA-Z])' + _re.escape(q) + r'(?![a-zA-Z])', _re.IGNORECASE)
+    if q or min_price is not None or max_price is not None:
+        # Start with a base query
+        query = Product.query.join(Category, isouter=True)
 
-        candidates = Product.query.join(Category, isouter=True).filter(
-            or_(
-                Product.name.ilike(f'%{q}%'),
-                Product.description.ilike(f'%{q}%'),
-                Product.tags.ilike(f'%{q}%'),
-                Product.synonyms.ilike(f'%{q}%'),
-                Product.meta_keywords.ilike(f'%{q}%'),
-                Category.name.ilike(f'%{q}%'),
-            )
-        ).all()
+        # Apply text search if query provided
+        if q:
+            import re as _re
+            pattern = _re.compile(r'(?<![a-zA-Z])' + _re.escape(q) + r'(?![a-zA-Z])', _re.IGNORECASE)
 
-        products = [
-            p for p in candidates
-            if pattern.search(p.name or '')
-            or pattern.search(p.description or '')
-            or pattern.search(p.tags or '')
-            or pattern.search(p.synonyms or '')
-            or pattern.search(p.meta_keywords or '')
-            or (p.category and pattern.search(p.category.name or ''))
-        ]
-    return render_template('search.html', query=q, products=products)
+            candidates = query.filter(
+                or_(
+                    Product.name.ilike(f'%{q}%'),
+                    Product.description.ilike(f'%{q}%'),
+                    Product.tags.ilike(f'%{q}%'),
+                    Product.synonyms.ilike(f'%{q}%'),
+                    Product.meta_keywords.ilike(f'%{q}%'),
+                    Category.name.ilike(f'%{q}%'),
+                )
+            ).all()
+
+            products = [
+                p for p in candidates
+                if pattern.search(p.name or '')
+                or pattern.search(p.description or '')
+                or pattern.search(p.tags or '')
+                or pattern.search(p.synonyms or '')
+                or pattern.search(p.meta_keywords or '')
+                or (p.category and pattern.search(p.category.name or ''))
+            ]
+        else:
+            products = query.all()
+
+        # Apply price filters
+        if min_price is not None:
+            products = [p for p in products if float(p.price) >= min_price]
+        if max_price is not None:
+            products = [p for p in products if float(p.price) <= max_price]
+
+    return render_template('search.html', query=q, products=products,
+                           min_price=min_price, max_price=max_price)
+
+@app.route('/api/search')
+def api_search():
+    q = request.args.get('q', '').strip()
+    if not q or len(q) < 2:
+        return jsonify([])
+    import re as _re
+    pattern = _re.compile(r'(?<![a-zA-Z])' + _re.escape(q) + r'(?![a-zA-Z])', _re.IGNORECASE)
+    candidates = Product.query.join(Category, isouter=True).filter(
+        or_(
+            Product.name.ilike(f'%{q}%'),
+            Product.tags.ilike(f'%{q}%'),
+            Product.synonyms.ilike(f'%{q}%'),
+            Product.meta_keywords.ilike(f'%{q}%'),
+            Category.name.ilike(f'%{q}%'),
+        )
+    ).limit(20).all()
+    results = [
+        p for p in candidates
+        if pattern.search(p.name or '')
+        or pattern.search(p.tags or '')
+        or pattern.search(p.synonyms or '')
+        or pattern.search(p.meta_keywords or '')
+        or (p.category and pattern.search(p.category.name or ''))
+    ]
+    return jsonify([{
+        'id': p.id,
+        'name': p.name,
+        'slug': p.slug,
+        'price': float(p.price),
+        'category': p.category.name if p.category else '',
+        'thumb': ('/uploads/' + p.images[0]) if p.images else '',
+        'tags': (p.tags or '925 Silver').split(',')[0].strip(),
+    } for p in results[:12]])
 
 # ---------- Admin Auth ----------
 @app.route('/admin/login', methods=['GET', 'POST'])
@@ -327,6 +399,39 @@ def admin_product_delete(id):
     flash('Product deleted.', 'success')
     return redirect(url_for('admin_dashboard'))
 
+@app.route('/admin/featured', methods=['GET', 'POST'])
+@login_required
+def admin_featured():
+    all_products = Product.query.order_by(Product.name).all()
+    if request.method == 'POST':
+        section = request.form.get('section')  # 'top_sellers' or 'new_arrivals'
+        ids = request.form.getlist('product_ids')
+        ids = [int(i) for i in ids if i.isdigit()]
+        if section == 'top_sellers':
+            Settings.set('top_seller_ids', ids)
+        elif section == 'new_arrivals':
+            Settings.set('new_arrival_ids', ids)
+        flash(f'{"Top Sellers" if section == "top_sellers" else "New Arrivals"} updated.', 'success')
+        return redirect(url_for('admin_featured'))
+    top_seller_ids = Settings.get('top_seller_ids', [])
+    new_arrival_ids = Settings.get('new_arrival_ids', [])
+    return render_template('admin/featured.html',
+                           all_products=all_products,
+                           top_seller_ids=top_seller_ids,
+                           new_arrival_ids=new_arrival_ids)
+
+@app.route('/admin/featured/reorder', methods=['POST'])
+@login_required
+def admin_featured_reorder():
+    data = request.json
+    section = data.get('section')
+    ids = [int(i) for i in data.get('ids', []) if str(i).isdigit()]
+    if section == 'top_sellers':
+        Settings.set('top_seller_ids', ids)
+    elif section == 'new_arrivals':
+        Settings.set('new_arrival_ids', ids)
+    return jsonify({'ok': True, 'count': len(ids)})
+
 @app.route('/admin/homepage', methods=['GET', 'POST'])
 @login_required
 def admin_homepage():
@@ -344,10 +449,10 @@ def admin_homepage():
         flash('Homepage settings saved.', 'success')
         return redirect(url_for('admin_homepage'))
     budget_ranges = Settings.get('budget_ranges', [
-        {'label': 'Gifts Under ₹1499', 'url': '/search?q=silver'},
-        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?q=silver'},
-        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?q=silver'},
-        {'label': 'Gifts Above ₹4999', 'url': '/search?q=silver'},
+        {'label': 'Gifts Under ₹1499', 'url': '/search?min_price=0&max_price=1499'},
+        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?min_price=1499&max_price=2499'},
+        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?min_price=2499&max_price=4999'},
+        {'label': 'Gifts Above ₹4999', 'url': '/search?min_price=4999'},
     ])
     brand_promises = Settings.get('brand_promises', [
         {'icon': '925', 'title': 'Fine Silver Jewellery'},
