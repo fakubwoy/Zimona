@@ -70,7 +70,7 @@
     <a href="/admin" class="btn-outline">&larr; Back to Dashboard</a>
 </div>
 
-<form method="POST" enctype="multipart/form-data">
+<form id="productForm" method="POST" enctype="multipart/form-data">
     <div class="product-form">
 
         <!-- LEFT COLUMN -->
@@ -207,6 +207,9 @@
 
 {% block scripts %}
 <script>
+    // ------------------------------------------------------------
+    // 1. Category Modal
+    // ------------------------------------------------------------
     const modal = document.getElementById('addCategoryModal');
     document.getElementById('showAddCategoryModal').addEventListener('click', () => modal.style.display = 'flex');
     document.getElementById('cancelAddCategory').addEventListener('click', () => { modal.style.display = 'none'; document.getElementById('newCategoryName').value = ''; });
@@ -223,6 +226,9 @@
         document.getElementById('newCategoryName').value = '';
     });
 
+    // ------------------------------------------------------------
+    // 2. Specifications
+    // ------------------------------------------------------------
     const container = document.getElementById('specFieldsContainer');
     const hiddenInput = document.getElementById('specsJson');
     const categorySelect = document.getElementById('categorySelect');
@@ -282,13 +288,14 @@
         finally { btn.textContent = '✦ Generate with AI'; btn.disabled = false; }
     });
 
-    // ── IMAGE MANAGEMENT WITH DRAG-TO-REORDER ──
-    // State: array of { type: 'existing'|'new', filename: string, src: string, file?: File }
+    // ------------------------------------------------------------
+    // 3. IMAGE MANAGEMENT
+    // ------------------------------------------------------------
+    // Each slot: { type: 'existing'|'new', filename: string, src: string, file?: File }
     let imageSlots = [];
-    let newFileObjects = []; // parallel array of File objects for 'new' slots
-
     const grid = document.getElementById('imagePreviewGrid');
     const orderInputs = document.getElementById('imageOrderInputs');
+    const fileInput = document.getElementById('imageUpload');
 
     // Load existing images from server-rendered JSON
     const existingData = JSON.parse(document.getElementById('existingImagesData').textContent || '[]');
@@ -315,11 +322,6 @@
             removeBtn.title = 'Remove image';
             removeBtn.innerHTML = '&times;';
             removeBtn.addEventListener('click', () => {
-                if (slot.type === 'new') {
-                    // Remove from newFileObjects too
-                    const ni = imageSlots.filter(s => s.type === 'new').indexOf(slot);
-                    if (ni > -1) newFileObjects.splice(ni, 1);
-                }
                 imageSlots.splice(i, 1);
                 renderGrid();
             });
@@ -337,7 +339,7 @@
         writeHiddenInputs();
     }
 
-    // Write hidden inputs that the form POST reads
+    // Write hidden inputs for existing images (preserved on server)
     function writeHiddenInputs() {
         orderInputs.innerHTML = '';
         imageSlots.forEach(slot => {
@@ -351,21 +353,7 @@
         });
     }
 
-    // Before the form submits, rebuild a DataTransfer so the file input reflects the new order
-    document.querySelector('form').addEventListener('submit', () => {
-        // Rebuild ordered hidden inputs (already done by writeHiddenInputs)
-        // Rebuild file input with new files in current order
-        const newSlots = imageSlots.filter(s => s.type === 'new');
-        const dt = new DataTransfer();
-        newSlots.forEach(slot => {
-            const origIdx = imageSlots.filter(s => s.type === 'new').indexOf(slot);
-            if (newFileObjects[origIdx]) dt.items.add(newFileObjects[origIdx]);
-        });
-        document.getElementById('imageUpload').files = dt.files;
-        writeHiddenInputs();
-    });
-
-    // Drag state
+    // Drag & Drop reordering
     let dragSrcIndex = null;
 
     function onDragStart(e) {
@@ -391,16 +379,6 @@
         // Reorder imageSlots
         const [moved] = imageSlots.splice(dragSrcIndex, 1);
         imageSlots.splice(targetIndex, 0, moved);
-
-        // Reorder newFileObjects in sync
-        const newSlotsBefore = imageSlots.map((s, i) => ({ s, i })).filter(x => x.s.type === 'new');
-        const reorderedFiles = newSlotsBefore.map(x => {
-            const origSlots = [...imageSlots].filter(s => s.type === 'new');
-            const ni = origSlots.indexOf(x.s);
-            return newFileObjects[ni] || null;
-        }).filter(Boolean);
-        newFileObjects = reorderedFiles;
-
         dragSrcIndex = null;
         renderGrid();
     }
@@ -410,25 +388,46 @@
         dragSrcIndex = null;
     }
 
-    // Handle new file uploads — append to grid, don't replace existing
-    document.getElementById('imageUpload').addEventListener('change', function() {
+    // Handle new file uploads – store the File object inside the slot
+    fileInput.addEventListener('change', function() {
         Array.from(this.files).forEach(file => {
             const reader = new FileReader();
             reader.onload = e => {
-                newFileObjects.push(file);
-                imageSlots.push({ type: 'new', filename: file.name, src: e.target.result });
+                imageSlots.push({
+                    type: 'new',
+                    filename: file.name,
+                    src: e.target.result,
+                    file: file        // <-- store the actual File object
+                });
                 renderGrid();
             };
             reader.readAsDataURL(file);
         });
-        // Clear the input so the same file can be re-added if needed
-        this.value = '';
+        this.value = ''; // allow re-upload of same file if needed
+    });
+
+    // On form submit, rebuild the file input's files from ordered slots
+    // FIX: Using getElementById specifically targetting this form
+    document.getElementById('productForm').addEventListener('submit', () => {
+        // First ensure hidden 'images_keep' inputs are up to date
+        writeHiddenInputs();
+
+        // Build a new DataTransfer with the new files in current order
+        const dt = new DataTransfer();
+        imageSlots.forEach(slot => {
+            if (slot.type === 'new' && slot.file) {
+                dt.items.add(slot.file);
+            }
+        });
+        fileInput.files = dt.files;
     });
 
     // Initial render
     renderGrid();
 
-    // ── BADGE SELECTOR ──
+    // ------------------------------------------------------------
+    // 4. BADGE SELECTOR
+    // ------------------------------------------------------------
     const DEFAULT_BADGES = ['925 Sterling Silver', 'Certified', 'Hallmarked', 'Oxidised', 'Handcrafted', 'Gold Plated'];
     const STORAGE_KEY = 'zimona_badge_options';
 
@@ -441,7 +440,6 @@
     }
 
     let badgeOptions = loadBadgeOptions();
-    // Ensure any product's current tags are present as options
     const currentTags = (document.getElementById('tagsHidden').value || '').split(',').map(t => t.trim()).filter(Boolean);
     currentTags.forEach(t => { if (!badgeOptions.includes(t)) badgeOptions.push(t); });
 
@@ -485,7 +483,6 @@
     });
 
     renderBadges();
-
     renderSpecFields();
 </script>
 {% endblock %}

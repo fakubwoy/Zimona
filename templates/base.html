@@ -400,9 +400,14 @@
                         </button>
                     </form>
                 </div>
-                <a href="/search" class="nav-icon-btn" title="Wishlist">
+                <button class="nav-icon-btn" id="wishlistToggle" title="Wishlist" style="position:relative;">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                </a>
+                    <span id="wishlistBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--maroon);color:#fff;font-size:10px;font-weight:600;width:17px;height:17px;border-radius:50%;align-items:center;justify-content:center;line-height:1;">0</span>
+                </button>
+                <button class="nav-icon-btn" id="cartToggle" title="Cart" style="position:relative;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                    <span id="cartBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--maroon);color:#fff;font-size:10px;font-weight:600;width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;">0</span>
+                </button>
             </div>
         </div>
     </nav>
@@ -469,6 +474,321 @@
             </div>
         </div>
     </footer>
+
+    <!-- CART DRAWER -->
+    <div id="cartOverlay" style="display:none;position:fixed;inset:0;background:rgba(28,26,26,0.45);z-index:900;" onclick="closeCart()"></div>
+    <div id="cartDrawer" style="position:fixed;top:0;right:0;height:100%;width:380px;max-width:95vw;background:#fff;z-index:901;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(107,26,26,0.12);">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:24px 28px;border-bottom:2px solid var(--maroon);">
+            <span style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;">Your Cart</span>
+            <button onclick="closeCart()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:22px;line-height:1;">&times;</button>
+        </div>
+        <div id="cartItems" style="flex:1;overflow-y:auto;padding:20px 28px;"></div>
+        <div style="padding:20px 28px;border-top:1px solid var(--border);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <span style="font-size:13px;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);">Total</span>
+                <span id="cartTotal" style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--maroon);">₹0</span>
+            </div>
+            <button onclick="initiateCheckout()" style="width:100%;background:var(--maroon);color:#fff;border:none;padding:18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;transition:background 0.25s;">Proceed to Checkout</button>
+        </div>
+    </div>
+
+    <!-- WISHLIST DRAWER -->
+    <div id="wishlistOverlay" style="display:none;position:fixed;inset:0;background:rgba(28,26,26,0.45);z-index:900;" onclick="closeWishlist()"></div>
+    <div id="wishlistDrawer" style="position:fixed;top:0;right:0;height:100%;width:380px;max-width:95vw;background:#fff;z-index:901;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1);display:flex;flex-direction:column;box-shadow:-4px 0 32px rgba(107,26,26,0.12);">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:24px 28px;border-bottom:2px solid var(--maroon);">
+            <span style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;">Wishlist</span>
+            <button onclick="closeWishlist()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:22px;line-height:1;">&times;</button>
+        </div>
+        <div id="wishlistItems" style="flex:1;overflow-y:auto;padding:20px 28px;"></div>
+        <div style="padding:20px 28px;border-top:1px solid var(--border);">
+            <button onclick="addAllWishlistToCart()" id="wishlistCheckoutBtn" style="width:100%;background:var(--maroon);color:#fff;border:none;padding:18px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;transition:background 0.25s;">Add All to Cart</button>
+        </div>
+    </div>
+
+    <!-- LOGIN / SIGNUP MODAL -->
+    <div id="authOverlay" style="display:none;position:fixed;inset:0;background:rgba(28,26,26,0.55);z-index:1000;align-items:center;justify-content:center;">
+        <div style="background:#fff;width:440px;max-width:94vw;padding:44px 40px;position:relative;">
+            <button onclick="closeAuth()" style="position:absolute;top:16px;right:20px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:22px;">&times;</button>
+            <p style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--maroon);margin-bottom:8px;font-weight:500;">Checkout</p>
+            <h2 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;margin-bottom:6px;">Sign in to continue</h2>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:28px;">Create an account or sign in to complete your purchase.</p>
+            <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:28px;">
+                <button id="tabLogin" onclick="switchTab('login')" style="flex:1;background:none;border:none;border-bottom:2px solid var(--maroon);margin-bottom:-2px;padding:10px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;color:var(--maroon);">Login</button>
+                <button id="tabSignup" onclick="switchTab('signup')" style="flex:1;background:none;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;padding:10px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;color:var(--muted);">Sign Up</button>
+            </div>
+            <div id="formLogin">
+                <input type="email" placeholder="Email address" style="width:100%;border:1px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none;margin-bottom:12px;background:#fff;">
+                <input type="password" placeholder="Password" style="width:100%;border:1px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none;margin-bottom:20px;background:#fff;">
+                <button onclick="showComingSoon()" style="width:100%;background:var(--maroon);color:#fff;border:none;padding:16px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;">Login</button>
+            </div>
+            <div id="formSignup" style="display:none;">
+                <input type="text" placeholder="Full name" style="width:100%;border:1px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none;margin-bottom:12px;background:#fff;">
+                <input type="email" placeholder="Email address" style="width:100%;border:1px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none;margin-bottom:12px;background:#fff;">
+                <input type="password" placeholder="Password" style="width:100%;border:1px solid var(--border);padding:13px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--charcoal);outline:none;margin-bottom:20px;background:#fff;">
+                <button onclick="showComingSoon()" style="width:100%;background:var(--maroon);color:#fff;border:none;padding:16px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;">Create Account</button>
+            </div>
+            <p id="comingSoonMsg" style="display:none;margin-top:16px;text-align:center;font-size:13px;color:var(--muted);font-style:italic;">Online checkout coming soon — please <a href="mailto:contact@zimona.com" style="color:var(--maroon);">contact us</a> to place your order.</p>
+        </div>
+    </div>
+
+    <script>
+        // ── CART ──
+        let cart = JSON.parse(localStorage.getItem('zimonaCart') || '[]');
+
+        function saveCart() { localStorage.setItem('zimonaCart', JSON.stringify(cart)); }
+
+        function updateCartBadge() {
+            const count = cart.reduce((s, i) => s + i.qty, 0);
+            const badge = document.getElementById('cartBadge');
+            if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
+        }
+
+        function renderCart() {
+            const el = document.getElementById('cartItems');
+            if (!el) return;
+            if (!cart.length) { el.innerHTML = '<p style="text-align:center;color:var(--muted);font-style:italic;padding:40px 0;">Your cart is empty.</p>'; }
+            else {
+                el.innerHTML = cart.map((item, idx) => `
+                <div style="display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);">
+                    ${item.img ? `<img src="${item.img}" style="width:60px;height:60px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">` : `<div style="width:60px;height:60px;background:var(--ivory);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--border);">◇</div>`}
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--charcoal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
+                        <div style="font-size:13px;color:var(--maroon);margin-top:3px;">₹${Number(item.price).toLocaleString('en-IN')}</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                        <button onclick="changeQty(${idx},-1)" style="width:26px;height:26px;border:1px solid var(--border);background:none;cursor:pointer;font-size:16px;color:var(--charcoal);">−</button>
+                        <span style="font-size:13px;min-width:16px;text-align:center;">${item.qty}</span>
+                        <button onclick="changeQty(${idx},1)" style="width:26px;height:26px;border:1px solid var(--border);background:none;cursor:pointer;font-size:16px;color:var(--charcoal);">+</button>
+                    </div>
+                </div>`).join('');
+            }
+            const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+            const t = document.getElementById('cartTotal');
+            if (t) t.textContent = '₹' + total.toLocaleString('en-IN');
+            updateCartBadge();
+        }
+
+        function addToCart(id, name, price, img) {
+            const existing = cart.find(i => i.id === id);
+            if (existing) existing.qty++;
+            else cart.push({ id, name, price: parseFloat(price), img, qty: 1 });
+            saveCart(); renderCart(); openCart();
+        }
+
+        function changeQty(idx, delta) {
+            cart[idx].qty += delta;
+            if (cart[idx].qty <= 0) cart.splice(idx, 1);
+            saveCart(); renderCart();
+        }
+
+        function openCart() {
+            document.getElementById('cartDrawer').style.transform = 'translateX(0)';
+            document.getElementById('cartOverlay').style.display = 'block';
+            renderCart();
+        }
+        function closeCart() {
+            document.getElementById('cartDrawer').style.transform = 'translateX(100%)';
+            document.getElementById('cartOverlay').style.display = 'none';
+        }
+
+        document.getElementById('cartToggle').addEventListener('click', openCart);
+
+        function initiateCheckout() { closeCart(); openAuth(); }
+        function openAuth() { const el = document.getElementById('authOverlay'); el.style.display = 'flex'; }
+        function closeAuth() { document.getElementById('authOverlay').style.display = 'none'; }
+        function switchTab(tab) {
+            document.getElementById('formLogin').style.display = tab === 'login' ? 'block' : 'none';
+            document.getElementById('formSignup').style.display = tab === 'signup' ? 'block' : 'none';
+            document.getElementById('comingSoonMsg').style.display = 'none';
+            document.getElementById('tabLogin').style.borderBottomColor = tab === 'login' ? 'var(--maroon)' : 'transparent';
+            document.getElementById('tabLogin').style.color = tab === 'login' ? 'var(--maroon)' : 'var(--muted)';
+            document.getElementById('tabSignup').style.borderBottomColor = tab === 'signup' ? 'var(--maroon)' : 'transparent';
+            document.getElementById('tabSignup').style.color = tab === 'signup' ? 'var(--maroon)' : 'var(--muted)';
+        }
+        function showComingSoon() { document.getElementById('comingSoonMsg').style.display = 'block'; }
+
+        updateCartBadge();
+    </script>
+
+    <script>
+        // ── WISHLIST ──
+        let wishlist = JSON.parse(localStorage.getItem('zimonaWishlist') || '[]');
+
+        function saveWishlist() { localStorage.setItem('zimonaWishlist', JSON.stringify(wishlist)); }
+
+        function updateWishlistBadge() {
+            const badge = document.getElementById('wishlistBadge');
+            if (!badge) return;
+            if (wishlist.length > 0) {
+                badge.textContent = wishlist.length;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        function isWishlisted(id) {
+            return wishlist.some(i => i.id === String(id));
+        }
+
+        function toggleWishlist(id, name, price, img, btnEl) {
+            id = String(id);
+            if (isWishlisted(id)) {
+                wishlist = wishlist.filter(i => i.id !== id);
+                if (btnEl) setHeartState(btnEl, false);
+            } else {
+                wishlist.push({ id, name, price: parseFloat(price), img });
+                if (btnEl) setHeartState(btnEl, true);
+                // Pulse animation
+                if (btnEl) {
+                    btnEl.classList.add('heart-pop');
+                    setTimeout(() => btnEl.classList.remove('heart-pop'), 400);
+                }
+            }
+            saveWishlist();
+            updateWishlistBadge();
+            renderWishlist();
+            // Sync all hearts on page for this product
+            document.querySelectorAll(`.wishlist-heart[data-id="${id}"]`).forEach(btn => {
+                setHeartState(btn, isWishlisted(id));
+            });
+        }
+
+        function setHeartState(btn, active) {
+            const svg = btn.querySelector('svg');
+            if (!svg) return;
+            if (active) {
+                svg.setAttribute('fill', 'var(--maroon)');
+                svg.setAttribute('stroke', 'var(--maroon)');
+                btn.setAttribute('title', 'Remove from Wishlist');
+            } else {
+                svg.setAttribute('fill', 'none');
+                svg.setAttribute('stroke', 'currentColor');
+                btn.setAttribute('title', 'Add to Wishlist');
+            }
+        }
+
+        function renderWishlist() {
+            const el = document.getElementById('wishlistItems');
+            if (!el) return;
+            const btn = document.getElementById('wishlistCheckoutBtn');
+
+            if (!wishlist.length) {
+                el.innerHTML = `
+                    <div style="text-align:center;padding:60px 0;">
+                        <svg width="48" height="48" fill="none" stroke="var(--border)" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 16px;display:block;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        <p style="color:var(--muted);font-style:italic;font-size:14px;">Your wishlist is empty.</p>
+                        <p style="color:var(--muted);font-size:12px;margin-top:6px;">Heart a piece to save it here.</p>
+                    </div>`;
+                if (btn) btn.style.display = 'none';
+                return;
+            }
+
+            if (btn) btn.style.display = 'block';
+            el.innerHTML = wishlist.map((item) => `
+                <div style="display:flex;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border);">
+                    ${item.img
+                        ? `<img src="${item.img}" style="width:60px;height:60px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;">`
+                        : `<div style="width:60px;height:60px;background:var(--ivory);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--border);">◇</div>`
+                    }
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-family:'Playfair Display',serif;font-size:14px;font-weight:600;color:var(--charcoal);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
+                        <div style="font-size:13px;color:var(--maroon);margin-top:3px;">₹${Number(item.price).toLocaleString('en-IN')}</div>
+                        <button onclick="moveToCart('${item.id}')" style="margin-top:6px;background:none;border:none;padding:0;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;color:var(--maroon);cursor:pointer;text-decoration:underline;text-underline-offset:3px;">Move to Cart</button>
+                    </div>
+                    <button onclick="toggleWishlist('${item.id}','${item.name.replace(/'/g,"\\'")}','${item.price}','${item.img}')" style="background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;flex-shrink:0;font-size:18px;line-height:1;" title="Remove">×</button>
+                </div>`).join('');
+        }
+
+        function moveToCart(id) {
+            const item = wishlist.find(i => i.id === id);
+            if (!item) return;
+            addToCart(item.id, item.name, item.price, item.img);
+            wishlist = wishlist.filter(i => i.id !== id);
+            saveWishlist();
+            updateWishlistBadge();
+            renderWishlist();
+            document.querySelectorAll(`.wishlist-heart[data-id="${id}"]`).forEach(btn => setHeartState(btn, false));
+        }
+
+        function addAllWishlistToCart() {
+            wishlist.forEach(item => {
+                const existing = cart.find(i => i.id === item.id);
+                if (existing) existing.qty++;
+                else cart.push({ id: item.id, name: item.name, price: item.price, img: item.img, qty: 1 });
+            });
+            wishlist = [];
+            saveCart(); saveWishlist();
+            updateCartBadge(); updateWishlistBadge();
+            renderWishlist();
+            closeWishlist();
+            openCart();
+        }
+
+        function openWishlist() {
+            document.getElementById('wishlistDrawer').style.transform = 'translateX(0)';
+            document.getElementById('wishlistOverlay').style.display = 'block';
+            renderWishlist();
+        }
+        function closeWishlist() {
+            document.getElementById('wishlistDrawer').style.transform = 'translateX(100%)';
+            document.getElementById('wishlistOverlay').style.display = 'none';
+        }
+
+        // Init nav toggle
+        document.getElementById('wishlistToggle').addEventListener('click', openWishlist);
+
+        // Init all hearts on page load
+        function initHearts() {
+            document.querySelectorAll('.wishlist-heart').forEach(btn => {
+                const id = btn.dataset.id;
+                setHeartState(btn, isWishlisted(id));
+            });
+        }
+
+        updateWishlistBadge();
+        // Wait for DOM then init hearts
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initHearts);
+        } else {
+            initHearts();
+        }
+    </script>
+
+    <style>
+        /* Wishlist heart button on cards */
+        .wishlist-heart {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 3;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--charcoal);
+            transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+            backdrop-filter: blur(4px);
+        }
+        .wishlist-heart:hover {
+            background: #fff;
+            border-color: var(--maroon);
+            color: var(--maroon);
+            transform: scale(1.1);
+        }
+        @keyframes heartPop {
+            0%   { transform: scale(1); }
+            40%  { transform: scale(1.35); }
+            70%  { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+        .heart-pop { animation: heartPop 0.4s cubic-bezier(0.4,0,0.2,1); }
+    </style>
 
     <script>
         // Scroll-reveal observer

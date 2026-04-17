@@ -128,10 +128,18 @@
                 </div>
             {% endif %}
             <span class="product-badge">{{ (p.tags or '925 Silver').split(',')[0].strip() }}</span>
+            <button
+                class="wishlist-heart"
+                data-id="{{ p.id }}"
+                onclick="event.preventDefault(); toggleWishlist('{{ p.id }}', '{{ p.name|replace("'", "\\'") }}', '{{ p.price }}', '{{ ("/uploads/" + p.images[0]) if p.images else "" }}', this)"
+                title="Add to Wishlist">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            </button>
         </div>
         <div class="product-info">
             <h3 class="product-name">{{ p.name }}</h3>
             <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
+            <button onclick="event.preventDefault();addToCart('{{ p.id }}','{{ p.name|replace("'","\\'") }}','{{ p.price }}','{{ ("/uploads/" + p.images[0]) if p.images else "" }}')" style="margin-top:10px;width:100%;background:var(--maroon);color:#fff;border:none;padding:10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;transition:background 0.25s;">Add to Cart</button>
         </div>
     </a>
     {% endfor %}

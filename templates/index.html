@@ -42,32 +42,10 @@
     .cat-photo-name { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.4); line-height: 1.2; }
 
     /* Section header for categories */
-    .cat-section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px; 
-        transition: transform 0.4s cubic-bezier(0.4,0,0.2,1),
-                    box-shadow 0.4s cubic-bezier(0.4,0,0.2,1);}
+    .cat-section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4px; }
     .collection-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 16px 48px rgba(74,16,16,0.25);
-    }
-
-    /* Category chips — slide-up stagger */
-    .cat-chip {
-        /* color/bg transitions are instant — no delay ever */
-        transition: background 0.22s, border-color 0.22s, color 0.22s,
-                    transform 0.25s cubic-bezier(0.4,0,0.2,1),
-                    box-shadow 0.25s;
-        /* Override: ensure color transitions never inherit a stagger delay */
-        --chip-color-duration: 0.22s;
-    }
-    .cat-chip:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 18px rgba(107,26,26,0.15);
-        /* Force color/bg to transition without any delay */
-        transition: background var(--chip-color-duration) 0s,
-                    border-color var(--chip-color-duration) 0s,
-                    color var(--chip-color-duration) 0s,
-                    transform 0.25s cubic-bezier(0.4,0,0.2,1),
-                    box-shadow 0.25s;
     }
 
     /* Product card — no lift, just shadow + border */
@@ -169,6 +147,7 @@
     .hero-slide-overlay {
         position: absolute;
         inset: 0;
+        background: linear-gradient(to right, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
     }
     .hero-slide-content {
         position: relative;
@@ -347,28 +326,6 @@
         align-self: flex-start;
     }
     .collection-link:hover { background: var(--maroon); color: #fff; }
-
-    /* CATEGORY CHIPS */
-    .categories-row {
-        display: grid;
-        grid-template-columns: repeat(6, 1fr);
-        gap: 12px;
-        margin-top: 48px;
-    }
-    .cat-chip {
-        background: #fff;
-        border: 1px solid var(--border);
-        padding: 20px 12px;
-        text-align: center;
-        text-decoration: none;
-        color: var(--charcoal);
-        transition: background 0.2s, border-color 0.2s, color 0.2s;
-        display: block;
-    }
-    .cat-chip:hover { background: var(--maroon); border-color: var(--maroon); color: #fff; }
-    .cat-chip-name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; display: block; margin-bottom: 2px; }
-    .cat-chip-arrow { font-size: 10px; letter-spacing: 0.1em; color: var(--maroon); transition: color 0.2s; }
-    .cat-chip:hover .cat-chip-arrow { color: rgba(255,255,255,0.8); }
 
     /* PRODUCTS GRID */
     .products-section { padding: 16px 40px 64px; max-width: 1400px; margin: 0 auto; }
@@ -652,6 +609,91 @@
         {% endfor %}
     </div>
 </div>
+<!-- BRAND PROMISE -->
+<div style="background:var(--ivory);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:48px 40px;margin-bottom:0;" class="reveal">
+    <div style="max-width:1400px;margin:0 auto;text-align:center;">
+        <h2 style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--maroon);margin-bottom:40px;">Brand Promise</h2>
+        <style>#brandPromiseGrid { grid-template-columns: repeat({{ brand_promises|length }}, 1fr); }</style>
+        <div id="brandPromiseGrid" style="display:grid;gap:0;max-width:800px;margin:0 auto;">
+            {% for p in brand_promises %}
+            <div style="padding:0 40px;{% if not loop.last %}border-right:1px solid var(--border);{% endif %}">
+                <div style="font-family:'Playfair Display',serif;font-size:42px;color:var(--maroon);margin-bottom:16px;line-height:1;">{{ p.icon }}</div>
+                <div style="font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--charcoal);line-height:1.6;">{{ p.title }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- SHOP ON BUDGET -->
+<div style="padding:64px 40px;max-width:1400px;margin:0 auto;" class="reveal">
+    <div style="text-align:center;margin-bottom:40px;">
+        <p class="section-eyebrow">Find Your Range</p>
+        <h2 class="section-title">Shop on Budget</h2>
+    </div>
+    <style>#budgetRangesGrid { grid-template-columns: repeat({{ budget_ranges|length }}, 1fr); }</style>
+    <div id="budgetRangesGrid" style="display:grid;gap:16px;">
+        {% for range in budget_ranges %}
+        <a href="{{ range.url }}" style="text-decoration:none;position:relative;aspect-ratio:3/4;overflow:hidden;border-radius:8px;display:block;background:linear-gradient(135deg,var(--maroon-deep),var(--maroon));">
+            <div style="position:absolute;inset:0;background:rgba(74,16,16,0.4);"></div>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+                <div style="width:110px;height:110px;border-radius:50%;border:2px solid rgba(255,255,255,0.35);display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.1);padding:12px;text-align:center;">
+                    <span style="font-family:'Playfair Display',serif;font-size:12px;font-weight:700;color:#fff;letter-spacing:0.04em;line-height:1.5;">{{ range.label }}</span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- NEW PRODUCTS -->
+<div style="padding:0 40px 64px;max-width:1400px;margin:0 auto;" class="reveal">
+    <div style="text-align:center;margin-bottom:40px;">
+        <p class="section-eyebrow">Just Arrived</p>
+        <h2 class="section-title">Our New Products</h2>
+        <p class="section-sub">Check out the products that our customers love the most</p>
+    </div>
+    <div class="products-grid">
+        {% for p in products[:4] %}
+        <a href="/product/{{ p.slug }}" class="product-card">
+            <div class="product-img">
+                {% if p.images %}
+                    <img class="img-primary" src="/uploads/{{ p.images[0] }}" alt="{{ p.name }}" loading="lazy">
+                    {% if p.images|length > 1 %}
+                        <img class="img-secondary" src="/uploads/{{ p.images[1] }}" alt="{{ p.name }}" loading="lazy">
+                    {% else %}
+                        <div class="img-overlay">
+                            <div class="img-overlay-rule"></div>
+                            <span class="img-overlay-name">{{ p.name }}</span>
+                            <span class="img-overlay-price">₹{{ "{:,.0f}".format(p.price) }}</span>
+                            <div class="img-overlay-rule"></div>
+                            <span class="img-overlay-cta">View Piece</span>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="product-img-placeholder"><span>◇</span></div>
+                    <div class="img-overlay">
+                        <div class="img-overlay-rule"></div>
+                        <span class="img-overlay-name">{{ p.name }}</span>
+                        <span class="img-overlay-price">₹{{ "{:,.0f}".format(p.price) }}</span>
+                        <div class="img-overlay-rule"></div>
+                        <span class="img-overlay-cta">View Piece</span>
+                    </div>
+                {% endif %}
+                <span class="product-badge">New</span>
+            </div>
+            <div class="product-info">
+                <h3 class="product-name">{{ p.name }}</h3>
+                <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    <div style="text-align:center;margin-top:32px;">
+        <a href="/search" class="btn-outline">View All →</a>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -712,14 +754,7 @@
             el.classList.add('reveal');
         });
     });
-    // Cat chips: stagger only the reveal animation, never the hover color transition
-    document.querySelectorAll('.categories-row .cat-chip').forEach((el, i) => {
-        el.style.animationDelay = (i * 0.06) + 's';
-        el.classList.add('reveal');
-        // On hover, wipe out any inherited transition-delay so color snaps immediately
-        el.addEventListener('mouseenter', () => { el.style.transitionDelay = '0s'; });
-        el.addEventListener('mouseleave', () => { el.style.transitionDelay = '0s'; });
-    });
+
     // Re-observe newly added reveal elements
     const obs = new IntersectionObserver((entries) => {
         entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-visible'); obs.unobserve(e.target); } });

@@ -72,6 +72,24 @@ class Category(db.Model):
             if not Category.query.filter_by(name=name).first():
                 db.session.add(Category(name=name, slug=slugify(name), spec_schema=schema))
         db.session.commit()
+class Settings(db.Model):
+    key = db.Column(db.String(100), primary_key=True)
+    value = db.Column(db.JSON)
+
+    @staticmethod
+    def get(key, default=None):
+        row = Settings.query.get(key)
+        return row.value if row else default
+
+    @staticmethod
+    def set(key, value):
+        row = Settings.query.get(key)
+        if row:
+            row.value = value
+        else:
+            db.session.add(Settings(key=key, value=value))
+        db.session.commit()
+
 
 class Product(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -157,7 +175,19 @@ def seed_sample_products():
 def index():
     categories = Category.query.all()
     featured = Product.query.order_by(Product.created.desc()).limit(8).all()
-    return render_template('index.html', categories=categories, products=featured)
+    brand_promises = Settings.get('brand_promises', [
+        {'icon': '925', 'title': 'Fine Silver Jewellery'},
+        {'icon': '✦', 'title': '100% Genuine Products'},
+        {'icon': '◈', 'title': 'Always Cadmium Free'},
+    ])
+    budget_ranges = Settings.get('budget_ranges', [
+        {'label': 'Gifts Under ₹1499', 'url': '/search?q=silver'},
+        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?q=silver'},
+        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?q=silver'},
+        {'label': 'Gifts Above ₹4999', 'url': '/search?q=silver'},
+    ])
+    return render_template('index.html', categories=categories, products=featured,
+                           brand_promises=brand_promises, budget_ranges=budget_ranges)
 
 @app.route('/product/<slug>')
 def product_detail(slug):
@@ -239,12 +269,12 @@ def admin_product_form(id=None):
         product.tags = tags[:500]
         product.synonyms = synonyms[:500]
 
-        if 'images' in request.files:
-            new_images = save_images(request.files.getlist('images'))
-            kept_images = request.form.getlist('images_keep')
-            # kept_images preserves the drag-sorted order from the form;
-            # new images are appended after (their order matches the file input order)
-            product.images = kept_images + new_images if (kept_images or new_images) else []
+        # Fix: Always explicitly update images array with exactly what the form sent. 
+        # This resolves an issue where deleting all images wouldn't reflect on the server.
+        new_images = save_images(request.files.getlist('images')) if 'images' in request.files else []
+        kept_images = request.form.getlist('images_keep')
+        product.images = kept_images + new_images
+
         db.session.commit()
         flash('Product saved.', 'success')
         return redirect(url_for('admin_dashboard'))
@@ -257,6 +287,35 @@ def admin_product_delete(id):
     db.session.commit()
     flash('Product deleted.', 'success')
     return redirect(url_for('admin_dashboard'))
+
+@app.route('/admin/homepage', methods=['GET', 'POST'])
+def admin_homepage():
+    if request.method == 'POST':
+        # Budget ranges
+        labels = request.form.getlist('budget_label')
+        urls = request.form.getlist('budget_url')
+        budget_ranges = [{'label': l, 'url': u} for l, u in zip(labels, urls) if l.strip()]
+        Settings.set('budget_ranges', budget_ranges)
+        # Brand promises
+        icons = request.form.getlist('promise_icon')
+        titles = request.form.getlist('promise_title')
+        brand_promises = [{'icon': ic, 'title': t} for ic, t in zip(icons, titles) if t.strip()]
+        Settings.set('brand_promises', brand_promises)
+        flash('Homepage settings saved.', 'success')
+        return redirect(url_for('admin_homepage'))
+    budget_ranges = Settings.get('budget_ranges', [
+        {'label': 'Gifts Under ₹1499', 'url': '/search?q=silver'},
+        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?q=silver'},
+        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?q=silver'},
+        {'label': 'Gifts Above ₹4999', 'url': '/search?q=silver'},
+    ])
+    brand_promises = Settings.get('brand_promises', [
+        {'icon': '925', 'title': 'Fine Silver Jewellery'},
+        {'icon': '✦', 'title': '100% Genuine Products'},
+        {'icon': '◈', 'title': 'Always Cadmium Free'},
+    ])
+    return render_template('admin/homepage.html', budget_ranges=budget_ranges, brand_promises=brand_promises)
+
 
 @app.route('/admin/categories', methods=['GET', 'POST'])
 def admin_categories():
@@ -306,8 +365,8 @@ def admin_category_upload_image(id):
         ext = f.filename.rsplit('.', 1)[1].lower()
         filename = f"cat_{secrets.token_hex(6)}.{ext}"
 
-        # Ensure assets/categories directory exists
-        cat_upload_dir = os.path.join('templates', 'assets', 'categories')
+        # FIX: Save into the static/uploads/categories folder which is backed by the Docker Volume
+        cat_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'categories')
         os.makedirs(cat_upload_dir, exist_ok=True)
 
         filepath = os.path.join(cat_upload_dir, filename)
@@ -466,6 +525,11 @@ def api_products():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/assets/categories/<path:filename>')
+def category_assets(filename):
+    # FIX: Intercept category image requests and serve them from the Docker Volume
+    return send_from_directory(os.path.join(app.config['UPLOAD_FOLDER'], 'categories'), filename)
 
 @app.route('/assets/<path:filename>')
 def assets_file(filename):

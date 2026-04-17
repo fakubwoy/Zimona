@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Homepage Settings – Zimona Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 28px; border-bottom: 2px solid var(--maroon); margin-bottom: 40px; }
+    .page-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--maroon); margin-bottom: 8px; font-weight: 500; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; }
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+    .settings-section { background: #fff; border: 1px solid var(--border); padding: 28px; }
+    .settings-section-title { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--charcoal); font-weight: 500; margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+    .editable-row { display: grid; grid-template-columns: 80px 1fr; gap: 8px; margin-bottom: 10px; align-items: center; }
+    .editable-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+    .add-row-btn { background: none; border: 1px dashed var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; letter-spacing: 0.06em; padding: 9px; width: 100%; cursor: pointer; transition: border-color 0.2s, color 0.2s; margin-top: 4px; }
+    .add-row-btn:hover { border-color: var(--maroon); color: var(--maroon); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="page-eyebrow">Administration</p>
+        <h1 class="page-title">Homepage Settings</h1>
+    </div>
+    <a href="/admin" class="btn-outline">&larr; Back to Dashboard</a>
+</div>
+
+<form method="POST">
+    <div class="settings-grid">
+        <!-- BRAND PROMISES -->
+        <div class="settings-section">
+            <div class="settings-section-title">Brand Promises</div>
+            <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Icon (emoji/text) and label shown in the Brand Promise bar.</p>
+            <div id="promisesContainer">
+                {% for p in brand_promises %}
+                <div class="editable-row">
+                    <input type="text" name="promise_icon" value="{{ p.icon }}" class="field-input" placeholder="Icon" style="font-size:20px;text-align:center;padding:8px;">
+                    <input type="text" name="promise_title" value="{{ p.title }}" class="field-input" placeholder="Title">
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="add-row-btn" onclick="addPromiseRow()">+ Add Promise</button>
+        </div>
+
+        <!-- BUDGET RANGES -->
+        <div class="settings-section">
+            <div class="settings-section-title">Shop on Budget Ranges</div>
+            <p style="font-size:12px;color:var(--muted);margin-bottom:16px;">Label and URL for each budget tile on the homepage.</p>
+            <div id="budgetContainer">
+                {% for r in budget_ranges %}
+                <div class="editable-row-2">
+                    <input type="text" name="budget_label" value="{{ r.label }}" class="field-input" placeholder="Label e.g. Gifts Under ₹1499">
+                    <input type="text" name="budget_url" value="{{ r.url }}" class="field-input" placeholder="URL e.g. /search?q=silver">
+                </div>
+                {% endfor %}
+            </div>
+            <button type="button" class="add-row-btn" onclick="addBudgetRow()">+ Add Range</button>
+        </div>
+    </div>
+
+    <div style="margin-top:32px;padding-top:28px;border-top:1px solid var(--border);display:flex;gap:14px;">
+        <button type="submit" class="btn-primary">Save Homepage Settings</button>
+        <a href="/" class="btn-outline" target="_blank">Preview Homepage →</a>
+    </div>
+</form>
+
+<script>
+function addPromiseRow() {
+    const c = document.getElementById('promisesContainer');
+    const div = document.createElement('div');
+    div.className = 'editable-row';
+    div.innerHTML = `<input type="text" name="promise_icon" value="" class="field-input" placeholder="Icon" style="font-size:20px;text-align:center;padding:8px;"><input type="text" name="promise_title" value="" class="field-input" placeholder="Title">`;
+    c.appendChild(div);
+}
+function addBudgetRow() {
+    const c = document.getElementById('budgetContainer');
+    const div = document.createElement('div');
+    div.className = 'editable-row-2';
+    div.innerHTML = `<input type="text" name="budget_label" value="" class="field-input" placeholder="Label e.g. Gifts Under ₹1499"><input type="text" name="budget_url" value="" class="field-input" placeholder="URL e.g. /search?q=silver">`;
+    c.appendChild(div);
+}
+</script>
+{% endblock %}
