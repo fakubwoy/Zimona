@@ -44,13 +44,19 @@ Rings, Necklaces, Earrings, Bracelets, Bangles, Chains
 
 ## Environment Variables
 
-| Variable          | Description                 |
-|-------------------|-----------------------------|
-| `SECRET_KEY`      | Flask secret key            |
-| `POSTGRES_USER`   | PostgreSQL user             |
-| `POSTGRES_PASSWORD`| PostgreSQL password         |
-| `POSTGRES_DB`     | PostgreSQL database name    |
-| `GEMINI_API_KEY`  | Google Gemini API key       |
+| Variable           | Description                  |
+|--------------------|------------------------------|
+| `SECRET_KEY`       | Flask secret key             |
+| `POSTGRES_USER`    | PostgreSQL user              |
+| `POSTGRES_PASSWORD`| PostgreSQL password          |
+| `POSTGRES_DB`      | PostgreSQL database name     |
+| `GEMINI_API_KEY`   | Google Gemini API key        |
+| `ADMIN_USERNAME`   | Admin panel username         |
+| `ADMIN_PASSWORD`   | Admin panel password         |
+
+## Admin Access
+
+The admin panel is available at `/admin` and is **not linked from the public navigation**. It is protected by username and password set via `ADMIN_USERNAME` and `ADMIN_PASSWORD` environment variables. All `/admin/*` routes require an active session — unauthenticated requests are redirected to `/admin/login`.
 
 ## Notes
 

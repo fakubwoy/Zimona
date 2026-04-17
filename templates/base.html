@@ -377,6 +377,15 @@
 <body>
     <div class="announcement-bar">✦ FINE SILVER JEWELLERY &nbsp;·&nbsp; 925 STERLING CERTIFIED &nbsp;·&nbsp; FREE SHIPPING ABOVE ₹1999 ✦</div>
 
+    {% if admin_logged_in %}
+    <div style="background:var(--maroon-deep);color:rgba(255,255,255,0.8);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;padding:7px 40px;display:flex;justify-content:space-between;align-items:center;">
+        <span>Admin Mode &nbsp;·&nbsp; <a href="/admin" style="color:#fff;text-decoration:none;font-weight:500;">Dashboard</a></span>
+        <form action="/admin/logout" method="POST" style="margin:0;">
+            <button type="submit" style="background:none;border:none;color:rgba(255,255,255,0.7);font-family:'DM Sans',sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;padding:0;transition:color 0.2s;">Sign Out</button>
+        </form>
+    </div>
+    {% endif %}
+
     <nav class="site-nav">
         <div class="nav-inner">
             <a href="/" class="nav-logo">Zimona</a>
@@ -388,7 +397,6 @@
                 <a href="/search?q=Earrings">Earrings</a>
                 <a href="/search?q=Bracelets">Bracelets</a>
                 <a href="/search?q=Anklets">Anklets</a>
-                <a href="/admin">Admin</a>
             </div>
             <div class="nav-right">
                 <div class="nav-search">

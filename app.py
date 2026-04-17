@@ -1,7 +1,8 @@
 import os, re, json, secrets, time
 from datetime import datetime
+from functools import wraps
 from PIL import Image
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory, session
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import or_, and_, func
 from sqlalchemy.orm import joinedload
@@ -19,12 +20,26 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'webp'}
 
 db = SQLAlchemy(app)
 genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'changeme')
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            return redirect(url_for('admin_login', next=request.path))
+        return f(*args, **kwargs)
+    return decorated
 model = genai.GenerativeModel('gemini-2.5-pro')  # Auto-selects latest stable version
 
 # ---------- Context Processor ----------
 @app.context_processor
 def inject_now():
-    return {'now': datetime.utcnow()}
+    return {
+        'now': datetime.utcnow(),
+        'admin_logged_in': session.get('admin_logged_in', False),
+    }
 
 # ---------- Helpers ----------
 def slugify(text):
@@ -227,14 +242,37 @@ def search():
         ]
     return render_template('search.html', query=q, products=products)
 
+# ---------- Admin Auth ----------
+@app.route('/admin/login', methods=['GET', 'POST'])
+def admin_login():
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin_dashboard'))
+    error = None
+    if request.method == 'POST':
+        if (request.form.get('username') == ADMIN_USERNAME and
+                request.form.get('password') == ADMIN_PASSWORD):
+            session['admin_logged_in'] = True
+            session.permanent = False
+            next_url = request.args.get('next') or url_for('admin_dashboard')
+            return redirect(next_url)
+        error = 'Invalid username or password.'
+    return render_template('admin/login.html', error=error)
+
+@app.route('/admin/logout', methods=['POST'])
+def admin_logout():
+    session.pop('admin_logged_in', None)
+    return redirect(url_for('admin_login'))
+
 # ---------- Admin ----------
 @app.route('/admin')
+@login_required
 def admin_dashboard():
     categories = Category.query.options(joinedload(Category.products)).all()
     return render_template('admin/dashboard.html', categories=categories)
 
 @app.route('/admin/product/new', methods=['GET', 'POST'])
 @app.route('/admin/product/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
 def admin_product_form(id=None):
     product = Product.query.get(id) if id else None
     categories = Category.query.all()
@@ -281,6 +319,7 @@ def admin_product_form(id=None):
     return render_template('admin/product_form.html', product=product, categories=categories)
 
 @app.route('/admin/product/<int:id>/delete', methods=['POST'])
+@login_required
 def admin_product_delete(id):
     product = Product.query.get_or_404(id)
     db.session.delete(product)
@@ -289,6 +328,7 @@ def admin_product_delete(id):
     return redirect(url_for('admin_dashboard'))
 
 @app.route('/admin/homepage', methods=['GET', 'POST'])
+@login_required
 def admin_homepage():
     if request.method == 'POST':
         # Budget ranges
@@ -318,6 +358,7 @@ def admin_homepage():
 
 
 @app.route('/admin/categories', methods=['GET', 'POST'])
+@login_required
 def admin_categories():
     if request.method == 'POST':
         name = request.form['name']
@@ -333,6 +374,7 @@ def admin_categories():
     return render_template('admin/categories.html', categories=categories)
 
 @app.route('/admin/category/<int:id>/delete', methods=['POST'])
+@login_required
 def admin_category_delete(id):
     cat = Category.query.get_or_404(id)
     db.session.delete(cat)
@@ -340,6 +382,7 @@ def admin_category_delete(id):
     flash('Category deleted.', 'success')
     return redirect(url_for('admin_categories'))
 @app.route('/admin/category/<int:id>/edit', methods=['POST'])
+@login_required
 def admin_category_edit(id):
     cat = Category.query.get_or_404(id)
     new_name = request.form.get('name', '').strip()
@@ -358,6 +401,7 @@ def admin_category_edit(id):
     return redirect(url_for('admin_categories'))
 
 @app.route('/admin/category/<int:id>/upload-image', methods=['POST'])
+@login_required
 def admin_category_upload_image(id):
     cat = Category.query.get_or_404(id)
     f = request.files.get('image')
@@ -381,6 +425,7 @@ def admin_category_upload_image(id):
 
 # ---------- AJAX Endpoints for Category & AI Specs ----------
 @app.route('/admin/category/add-ajax', methods=['POST'])
+@login_required
 def add_category_ajax():
     name = request.json.get('name', '').strip()
     if not name:
@@ -394,6 +439,7 @@ def add_category_ajax():
     return jsonify({'id': cat.id, 'name': cat.name})
 
 @app.route('/admin/ai-suggest-specs', methods=['POST'])
+@login_required
 def ai_suggest_specs():
     data = request.json
     name = data.get('name', '')
@@ -436,6 +482,7 @@ def category_spec_values(id):
 
 # ---------- AI Endpoints (SEO & Assistant) ----------
 @app.route('/admin/ai-seo', methods=['POST'])
+@login_required
 def ai_seo():
     data = request.json
     name = data.get('name', '')
@@ -450,6 +497,7 @@ def ai_seo():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/admin/ai-assistant', methods=['POST'])
+@login_required
 def ai_assistant():
     data = request.json
     nl = data.get('command', '')
@@ -474,6 +522,7 @@ Only JSON, no explanation."""
         return jsonify({'error': str(e)}), 500
 
 @app.route('/admin/apply-action', methods=['POST'])
+@login_required
 def apply_action():
     action = request.json
     if not action:

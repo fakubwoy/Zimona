@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login – Zimona</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream: #FAF6F0;
+            --ivory: #F3EDE4;
+            --maroon: #6B1A1A;
+            --maroon-deep: #4A1010;
+            --charcoal: #1C1A1A;
+            --muted: #7A6F6A;
+            --border: #E4DDD5;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: var(--cream);
+            color: var(--charcoal);
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 300;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+        }
+        .announcement-bar {
+            background: var(--maroon);
+            color: #fff;
+            text-align: center;
+            padding: 9px 20px;
+            font-size: 12px;
+            font-weight: 400;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .nav-bar {
+            background: #fff;
+            border-bottom: 3px solid var(--maroon);
+            box-shadow: 0 2px 16px rgba(107,26,26,0.1);
+            padding: 0 40px;
+            height: 74px;
+            display: flex;
+            align-items: center;
+        }
+        .nav-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 30px;
+            font-weight: 700;
+            font-style: italic;
+            color: var(--maroon);
+            text-decoration: none;
+        }
+        .login-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+        }
+        .login-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-top: 4px solid var(--maroon);
+            width: 100%;
+            max-width: 420px;
+            padding: 48px 44px 44px;
+        }
+        .login-eyebrow {
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--maroon);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .login-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--charcoal);
+            margin-bottom: 36px;
+        }
+        .field-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+        .field-label {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+        .field-input {
+            background: var(--cream);
+            border: 1px solid var(--border);
+            padding: 13px 16px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--charcoal);
+            outline: none;
+            width: 100%;
+            transition: border-color 0.25s;
+        }
+        .field-input:focus { border-color: var(--maroon); background: #fff; }
+        .field-input::placeholder { color: #C5BBB0; }
+        .error-msg {
+            background: #FDF0F0;
+            border-left: 4px solid var(--maroon);
+            padding: 12px 16px;
+            font-size: 13px;
+            color: var(--charcoal);
+            margin-bottom: 24px;
+        }
+        .btn-login {
+            display: block;
+            width: 100%;
+            background: var(--maroon);
+            color: #fff;
+            border: none;
+            padding: 15px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.25s;
+            margin-top: 8px;
+        }
+        .btn-login:hover { background: var(--maroon-deep); }
+        .login-footer {
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .login-footer a {
+            color: var(--maroon);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .login-footer a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="announcement-bar">✦ ZIMONA ADMIN &nbsp;·&nbsp; RESTRICTED ACCESS ✦</div>
+    <div class="nav-bar">
+        <a href="/" class="nav-logo">Zimona</a>
+    </div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <p class="login-eyebrow">Administration</p>
+            <h1 class="login-title">Sign In</h1>
+
+            {% if error %}
+            <div class="error-msg">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST">
+                <div class="field-group">
+                    <label class="field-label" for="username">Username</label>
+                    <input class="field-input" type="text" id="username" name="username"
+                           placeholder="Enter your username" autocomplete="username" required autofocus>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="password">Password</label>
+                    <input class="field-input" type="password" id="password" name="password"
+                           placeholder="Enter your password" autocomplete="current-password" required>
+                </div>
+                <button class="btn-login" type="submit">Sign In to Dashboard</button>
+            </form>
+
+            <div class="login-footer">
+                <a href="/">&larr; Return to Store</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
