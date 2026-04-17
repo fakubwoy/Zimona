@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+{% block title %}{% if product %}Edit Product{% else %}New Product{% endif %} – Zimona{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 28px; border-bottom: 2px solid var(--maroon); margin-bottom: 40px; }
+    .page-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--maroon); margin-bottom: 8px; font-weight: 500; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; }
+
+    .product-form { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
+    .form-left, .form-right { display: flex; flex-direction: column; gap: 28px; }
+    .form-section { background: #fff; border: 1px solid var(--border); padding: 28px; }
+    .form-section-title { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--charcoal); font-weight: 500; margin-bottom: 22px; padding-bottom: 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .form-section-title .ai-btn { font-family: 'DM Sans', sans-serif; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; background: #FDF0F0; color: var(--maroon); border: 1px solid #F5C0C0; padding: 5px 12px; cursor: pointer; transition: background 0.2s; font-weight: 500; }
+    .form-section-title .ai-btn:hover { background: #F9D8D8; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .spec-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .remove-spec-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 6px; transition: color 0.2s; }
+    .remove-spec-btn:hover { color: #C0392B; }
+    .add-spec-btn { background: none; border: 1px dashed var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 12px; letter-spacing: 0.06em; padding: 9px; width: 100%; cursor: pointer; transition: border-color 0.2s, color 0.2s; margin-top: 4px; }
+    .add-spec-btn:hover { border-color: var(--maroon); color: var(--maroon); }
+
+    .image-upload-label { display: block; border: 2px dashed var(--border); padding: 28px; text-align: center; cursor: pointer; transition: border-color 0.25s, background 0.25s; }
+    .image-upload-label:hover { border-color: var(--maroon); background: #FDF8F8; }
+    .image-upload-icon { font-size: 30px; color: var(--border); margin-bottom: 8px; display: block; font-family: 'Playfair Display', serif; }
+    .image-upload-text { font-size: 12px; letter-spacing: 0.06em; color: var(--muted); }
+    .image-preview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+    .image-preview-item { position: relative; cursor: grab; touch-action: none; }
+    .image-preview-item:active { cursor: grabbing; }
+    .image-preview-item img { width: 100%; aspect-ratio: 1; object-fit: cover; border: 1px solid var(--border); display: block; pointer-events: none; }
+    .image-preview-item.is-primary::after { content: 'Primary'; position: absolute; bottom: 4px; left: 4px; background: var(--maroon); color: #fff; font-size: 9px; padding: 2px 6px; letter-spacing: 0.08em; pointer-events: none; }
+    .image-preview-item.is-new::before { content: 'NEW'; position: absolute; top: 4px; left: 4px; background: #2A6B3C; color: #fff; font-size: 9px; padding: 2px 6px; letter-spacing: 0.08em; z-index: 2; pointer-events: none; }
+    .image-preview-item.drag-over { outline: 2px dashed var(--maroon); outline-offset: 2px; opacity: 0.7; }
+    .image-preview-item.dragging { opacity: 0.35; cursor: grabbing; }
+    .image-remove-btn { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; background: rgba(192,57,43,0.88); color: #fff; border: none; cursor: pointer; font-size: 14px; line-height: 1; display: flex; align-items: center; justify-content: center; transition: background 0.2s; z-index: 3; }
+    .image-remove-btn:hover { background: #C0392B; }
+
+    /* Badge / tag selector */
+    .badge-selector { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .badge-option { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1px solid var(--border); background: var(--ivory); cursor: pointer; font-size: 12px; letter-spacing: 0.06em; color: var(--muted); transition: all 0.2s; user-select: none; }
+    .badge-option input[type=checkbox] { display: none; }
+    .badge-option.selected { background: #FDF0F0; border-color: var(--maroon); color: var(--maroon); font-weight: 500; }
+    .badge-option.selected::before { content: '✓ '; font-size: 10px; }
+    .badge-add-row { display: flex; gap: 8px; margin-top: 4px; }
+    .badge-add-input { flex: 1; border: 1px dashed var(--border); background: transparent; padding: 7px 10px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--charcoal); outline: none; }
+    .badge-add-input::placeholder { color: #C5BBB0; }
+    .badge-add-btn { background: var(--ivory); border: 1px solid var(--border); color: var(--charcoal); font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap; font-weight: 500; }
+    .badge-add-btn:hover { background: #FDF0F0; border-color: var(--maroon); color: var(--maroon); }
+
+    .category-row-field { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+    .new-cat-btn { background: var(--ivory); border: 1px solid var(--border); color: var(--charcoal); font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 14px; cursor: pointer; transition: background 0.2s, border-color 0.2s; white-space: nowrap; font-weight: 500; }
+    .new-cat-btn:hover { background: #FDF0F0; border-color: var(--maroon); color: var(--maroon); }
+
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 200; }
+    .modal-box { background: #fff; padding: 36px; width: 400px; border-top: 4px solid var(--maroon); }
+    .modal-title { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; margin-bottom: 22px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+
+    .form-actions { grid-column: 1 / -1; display: flex; gap: 14px; padding-top: 28px; border-top: 1px solid var(--border); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="page-eyebrow">Administration</p>
+        <h1 class="page-title">{% if product %}Edit Product{% else %}Add New Product{% endif %}</h1>
+    </div>
+    <a href="/admin" class="btn-outline">&larr; Back to Dashboard</a>
+</div>
+
+<form method="POST" enctype="multipart/form-data">
+    <div class="product-form">
+
+        <!-- LEFT COLUMN -->
+        <div class="form-left">
+            <!-- Basic Info -->
+            <div class="form-section">
+                <div class="form-section-title">Basic Information</div>
+                <div style="display:flex;flex-direction:column;gap:18px;">
+                    <div class="field-group">
+                        <label class="field-label">Product Name *</label>
+                        <input type="text" name="name" value="{{ product.name if product else '' }}" required class="field-input">
+                    </div>
+                    <div class="form-row">
+                        <div class="field-group">
+                            <label class="field-label">Price (₹) *</label>
+                            <input type="number" step="0.01" name="price" value="{{ product.price if product else '' }}" required class="field-input">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Category</label>
+                            <div class="category-row-field">
+                                <select name="category_id" id="categorySelect" class="field-input">
+                                    <option value="">— Select —</option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.id }}" {% if product and product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" id="showAddCategoryModal" class="new-cat-btn">+ New</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Description</label>
+                        <textarea name="description" rows="5" class="field-input">{{ product.description if product else '' }}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Images -->
+            <div class="form-section">
+                <div class="form-section-title">
+                    <span>Images</span>
+                    <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0.04em;text-transform:none;">Drag to reorder · First image is primary</span>
+                </div>
+                <label class="image-upload-label" for="imageUpload">
+                    <span class="image-upload-icon">◇</span>
+                    <span class="image-upload-text">Click to upload · PNG, JPG, WEBP · Max 16MB</span>
+                </label>
+                <input type="file" id="imageUpload" name="images" multiple accept="image/*" style="display:none;">
+                <!-- Single unified drag-sortable grid for existing + new images -->
+                <div class="image-preview-grid" id="imagePreviewGrid" style="margin-top:12px;"></div>
+                <!-- Hidden inputs for order are written by JS before submit -->
+                <div id="imageOrderInputs"></div>
+                <!-- Seed existing images into JS -->
+                <script id="existingImagesData" type="application/json">{{ (product.images if product and product.images else [])|tojson }}</script>
+            </div>
+
+            <!-- Specifications -->
+            <div class="form-section">
+                <div class="form-section-title">
+                    <span>Specifications</span>
+                    <button type="button" id="aiSuggestSpecs" class="ai-btn">✦ AI Suggest</button>
+                </div>
+                <div id="specFieldsContainer" style="margin-bottom:10px;"></div>
+                <button type="button" id="addSpecField" class="add-spec-btn">+ Add Specification</button>
+                <input type="hidden" name="specs" id="specsJson" value='{{ product.specs|tojson if product and product.specs else "{}" }}'>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="form-right">
+            <!-- SEO -->
+            <div class="form-section">
+                <div class="form-section-title">
+                    <span>SEO Data</span>
+                    <button type="button" id="generateSeo" class="ai-btn">✦ Generate with AI</button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:18px;">
+                    <div class="field-group">
+                        <label class="field-label">Meta Title <span style="color:var(--muted);font-size:10px;">(≤60 chars)</span></label>
+                        <input type="text" name="meta_title" id="meta_title" maxlength="60" value="{{ product.meta_title if product else '' }}" class="field-input">
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Meta Description <span style="color:var(--muted);font-size:10px;">(≤160 chars)</span></label>
+                        <textarea name="meta_description" id="meta_description" maxlength="160" rows="3" class="field-input">{{ product.meta_description if product else '' }}</textarea>
+                    </div>
+                    <div class="field-group">
+                        <label class="field-label">Meta Keywords</label>
+                        <input type="text" name="meta_keywords" id="meta_keywords" placeholder="silver, ring, 925…" value="{{ product.meta_keywords if product else '' }}" class="field-input">
+                    </div>
+                    <div class="form-row">
+                        <div class="field-group">
+                            <label class="field-label">Display Badges</label>
+                            <div class="badge-selector" id="badgeSelector">
+                                <!-- populated by JS -->
+                            </div>
+                            <div class="badge-add-row">
+                                <input type="text" id="badgeAddInput" class="badge-add-input" placeholder="Add custom badge…">
+                                <button type="button" id="badgeAddBtn" class="badge-add-btn">+ Add</button>
+                            </div>
+                            <input type="hidden" name="tags" id="tagsHidden" value="{{ product.tags if product else '' }}">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">Synonyms</label>
+                            <input type="text" name="synonyms" id="synonyms" placeholder="comma separated" value="{{ product.synonyms if product else '' }}" class="field-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="form-actions">
+            <button type="submit" class="btn-primary">Save Product</button>
+            <a href="/admin" class="btn-outline">Cancel</a>
+        </div>
+    </div>
+</form>
+
+<!-- ADD CATEGORY MODAL -->
+<div id="addCategoryModal" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+        <h3 class="modal-title">Add New Category</h3>
+        <div class="field-group">
+            <label class="field-label">Category Name</label>
+            <input type="text" id="newCategoryName" placeholder="e.g. Anklets" class="field-input">
+        </div>
+        <div class="modal-actions">
+            <button type="button" id="cancelAddCategory" class="btn-outline">Cancel</button>
+            <button type="button" id="saveNewCategory" class="btn-primary">Add Category</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const modal = document.getElementById('addCategoryModal');
+    document.getElementById('showAddCategoryModal').addEventListener('click', () => modal.style.display = 'flex');
+    document.getElementById('cancelAddCategory').addEventListener('click', () => { modal.style.display = 'none'; document.getElementById('newCategoryName').value = ''; });
+    document.getElementById('saveNewCategory').addEventListener('click', async () => {
+        const name = document.getElementById('newCategoryName').value.trim();
+        if (!name) return;
+        const res = await fetch('/admin/category/add-ajax', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name}) });
+        const data = await res.json();
+        if (data.error) { alert(data.error); return; }
+        const sel = document.getElementById('categorySelect');
+        const opt = new Option(data.name, data.id);
+        sel.add(opt); sel.value = data.id;
+        modal.style.display = 'none';
+        document.getElementById('newCategoryName').value = '';
+    });
+
+    const container = document.getElementById('specFieldsContainer');
+    const hiddenInput = document.getElementById('specsJson');
+    const categorySelect = document.getElementById('categorySelect');
+    let specs = JSON.parse(hiddenInput.value || '{}');
+    let currentCategoryId = categorySelect.value;
+
+    async function fetchSpecValueSuggestions(key) {
+        if (!currentCategoryId || !key) return [];
+        try { const res = await fetch(`/api/category/${currentCategoryId}/spec-values?key=${encodeURIComponent(key)}`); return await res.json(); }
+        catch(e) { return []; }
+    }
+    function renderSpecFields() { container.innerHTML = ''; Object.entries(specs).forEach(([k,v]) => addFieldRow(k, v)); updateHiddenJson(); }
+    function addFieldRow(key='', value='') {
+        const row = document.createElement('div'); row.className = 'spec-row';
+        const dlId = `dl-${Date.now()}-${Math.random().toString(36).substr(2,4)}`;
+        row.innerHTML = `<input type="text" placeholder="Specification" value="${key}" class="field-input spec-key" style="font-size:13px;padding:9px 12px;"><input type="text" placeholder="Value" value="${value}" class="field-input spec-value" list="${dlId}" style="font-size:13px;padding:9px 12px;"><datalist id="${dlId}"></datalist><button type="button" class="remove-spec-btn">&times;</button>`;
+        container.appendChild(row);
+        const keyEl = row.querySelector('.spec-key'); const valEl = row.querySelector('.spec-value'); const dl = row.querySelector('datalist');
+        keyEl.addEventListener('input', () => { updateSpecsFromFields(); updateDatalist(keyEl.value, dl); });
+        valEl.addEventListener('input', updateSpecsFromFields);
+        valEl.addEventListener('focus', () => updateDatalist(keyEl.value, dl));
+        row.querySelector('.remove-spec-btn').addEventListener('click', () => { row.remove(); updateSpecsFromFields(); });
+    }
+    async function updateDatalist(key, dl) {
+        if (!key || !currentCategoryId) return;
+        const suggestions = await fetchSpecValueSuggestions(key);
+        dl.innerHTML = suggestions.map(v => `<option value="${v}">`).join('');
+    }
+    function updateSpecsFromFields() { specs = {}; container.querySelectorAll('.spec-row').forEach(row => { const k = row.querySelector('.spec-key').value.trim(); if (k) specs[k] = row.querySelector('.spec-value').value; }); updateHiddenJson(); }
+    function updateHiddenJson() { hiddenInput.value = JSON.stringify(specs); }
+    document.getElementById('addSpecField').addEventListener('click', () => addFieldRow());
+    categorySelect.addEventListener('change', async () => {
+        currentCategoryId = categorySelect.value;
+        if (!currentCategoryId) return;
+        try { const res = await fetch(`/api/category/${currentCategoryId}/spec-keys`); const keys = await res.json(); if (Object.keys(specs).length === 0 && keys.length > 0) { specs = {}; keys.forEach(k => specs[k] = ''); renderSpecFields(); } } catch(e) {}
+    });
+    currentCategoryId = categorySelect.value;
+    if (categorySelect.value) categorySelect.dispatchEvent(new Event('change'));
+
+    document.getElementById('aiSuggestSpecs').addEventListener('click', async () => {
+        const name = document.querySelector('input[name="name"]').value;
+        const desc = document.querySelector('textarea[name="description"]').value;
+        const catText = categorySelect.options[categorySelect.selectedIndex]?.text || '';
+        if (!name) { alert('Enter a product name first.'); return; }
+        const btn = document.getElementById('aiSuggestSpecs'); btn.textContent = '…'; btn.disabled = true;
+        try { const res = await fetch('/admin/ai-suggest-specs', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, desc, category: catText}) }); const data = await res.json(); if (data.error) { alert(data.error); return; } specs = { ...data, ...specs }; renderSpecFields(); }
+        catch(e) { alert('AI suggestion failed.'); }
+        finally { btn.textContent = '✦ AI Suggest'; btn.disabled = false; }
+    });
+
+    document.getElementById('generateSeo').addEventListener('click', async () => {
+        const name = document.querySelector('input[name="name"]').value;
+        const desc = document.querySelector('textarea[name="description"]').value;
+        const btn = document.getElementById('generateSeo'); btn.textContent = '…'; btn.disabled = true;
+        try { const res = await fetch('/admin/ai-seo', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, desc}) }); const data = await res.json(); if (data.meta_title) document.getElementById('meta_title').value = data.meta_title; if (data.meta_description) document.getElementById('meta_description').value = data.meta_description; if (data.meta_keywords) document.getElementById('meta_keywords').value = data.meta_keywords; if (data.tags) document.getElementById('tags').value = data.tags; if (data.synonyms) document.getElementById('synonyms').value = data.synonyms; }
+        catch(e) { alert('SEO generation failed.'); }
+        finally { btn.textContent = '✦ Generate with AI'; btn.disabled = false; }
+    });
+
+    // ── IMAGE MANAGEMENT WITH DRAG-TO-REORDER ──
+    // State: array of { type: 'existing'|'new', filename: string, src: string, file?: File }
+    let imageSlots = [];
+    let newFileObjects = []; // parallel array of File objects for 'new' slots
+
+    const grid = document.getElementById('imagePreviewGrid');
+    const orderInputs = document.getElementById('imageOrderInputs');
+
+    // Load existing images from server-rendered JSON
+    const existingData = JSON.parse(document.getElementById('existingImagesData').textContent || '[]');
+    existingData.forEach(fn => {
+        imageSlots.push({ type: 'existing', filename: fn, src: `/uploads/${fn}` });
+    });
+
+    function renderGrid() {
+        grid.innerHTML = '';
+        imageSlots.forEach((slot, i) => {
+            const div = document.createElement('div');
+            div.className = 'image-preview-item' + (i === 0 ? ' is-primary' : '') + (slot.type === 'new' ? ' is-new' : '');
+            div.dataset.index = i;
+            div.draggable = true;
+
+            const img = document.createElement('img');
+            img.src = slot.src;
+            img.alt = 'Product image';
+            div.appendChild(img);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'image-remove-btn';
+            removeBtn.title = 'Remove image';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.addEventListener('click', () => {
+                if (slot.type === 'new') {
+                    // Remove from newFileObjects too
+                    const ni = imageSlots.filter(s => s.type === 'new').indexOf(slot);
+                    if (ni > -1) newFileObjects.splice(ni, 1);
+                }
+                imageSlots.splice(i, 1);
+                renderGrid();
+            });
+            div.appendChild(removeBtn);
+
+            // Drag events
+            div.addEventListener('dragstart', onDragStart);
+            div.addEventListener('dragover',  onDragOver);
+            div.addEventListener('dragleave', onDragLeave);
+            div.addEventListener('drop',      onDrop);
+            div.addEventListener('dragend',   onDragEnd);
+
+            grid.appendChild(div);
+        });
+        writeHiddenInputs();
+    }
+
+    // Write hidden inputs that the form POST reads
+    function writeHiddenInputs() {
+        orderInputs.innerHTML = '';
+        imageSlots.forEach(slot => {
+            if (slot.type === 'existing') {
+                const inp = document.createElement('input');
+                inp.type = 'hidden';
+                inp.name = 'images_keep';
+                inp.value = slot.filename;
+                orderInputs.appendChild(inp);
+            }
+        });
+    }
+
+    // Before the form submits, rebuild a DataTransfer so the file input reflects the new order
+    document.querySelector('form').addEventListener('submit', () => {
+        // Rebuild ordered hidden inputs (already done by writeHiddenInputs)
+        // Rebuild file input with new files in current order
+        const newSlots = imageSlots.filter(s => s.type === 'new');
+        const dt = new DataTransfer();
+        newSlots.forEach(slot => {
+            const origIdx = imageSlots.filter(s => s.type === 'new').indexOf(slot);
+            if (newFileObjects[origIdx]) dt.items.add(newFileObjects[origIdx]);
+        });
+        document.getElementById('imageUpload').files = dt.files;
+        writeHiddenInputs();
+    });
+
+    // Drag state
+    let dragSrcIndex = null;
+
+    function onDragStart(e) {
+        dragSrcIndex = +e.currentTarget.dataset.index;
+        e.currentTarget.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragSrcIndex);
+    }
+    function onDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        e.currentTarget.classList.add('drag-over');
+    }
+    function onDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+    function onDrop(e) {
+        e.preventDefault();
+        const targetIndex = +e.currentTarget.dataset.index;
+        e.currentTarget.classList.remove('drag-over');
+        if (dragSrcIndex === null || dragSrcIndex === targetIndex) return;
+
+        // Reorder imageSlots
+        const [moved] = imageSlots.splice(dragSrcIndex, 1);
+        imageSlots.splice(targetIndex, 0, moved);
+
+        // Reorder newFileObjects in sync
+        const newSlotsBefore = imageSlots.map((s, i) => ({ s, i })).filter(x => x.s.type === 'new');
+        const reorderedFiles = newSlotsBefore.map(x => {
+            const origSlots = [...imageSlots].filter(s => s.type === 'new');
+            const ni = origSlots.indexOf(x.s);
+            return newFileObjects[ni] || null;
+        }).filter(Boolean);
+        newFileObjects = reorderedFiles;
+
+        dragSrcIndex = null;
+        renderGrid();
+    }
+    function onDragEnd(e) {
+        e.currentTarget.classList.remove('dragging');
+        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        dragSrcIndex = null;
+    }
+
+    // Handle new file uploads — append to grid, don't replace existing
+    document.getElementById('imageUpload').addEventListener('change', function() {
+        Array.from(this.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                newFileObjects.push(file);
+                imageSlots.push({ type: 'new', filename: file.name, src: e.target.result });
+                renderGrid();
+            };
+            reader.readAsDataURL(file);
+        });
+        // Clear the input so the same file can be re-added if needed
+        this.value = '';
+    });
+
+    // Initial render
+    renderGrid();
+
+    // ── BADGE SELECTOR ──
+    const DEFAULT_BADGES = ['925 Sterling Silver', 'Certified', 'Hallmarked', 'Oxidised', 'Handcrafted', 'Gold Plated'];
+    const STORAGE_KEY = 'zimona_badge_options';
+
+    function loadBadgeOptions() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFAULT_BADGES; }
+        catch(e) { return DEFAULT_BADGES; }
+    }
+    function saveBadgeOptions(opts) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(opts));
+    }
+
+    let badgeOptions = loadBadgeOptions();
+    // Ensure any product's current tags are present as options
+    const currentTags = (document.getElementById('tagsHidden').value || '').split(',').map(t => t.trim()).filter(Boolean);
+    currentTags.forEach(t => { if (!badgeOptions.includes(t)) badgeOptions.push(t); });
+
+    let selectedBadges = new Set(currentTags);
+
+    function renderBadges() {
+        const container = document.getElementById('badgeSelector');
+        container.innerHTML = '';
+        badgeOptions.forEach(badge => {
+            const pill = document.createElement('label');
+            pill.className = 'badge-option' + (selectedBadges.has(badge) ? ' selected' : '');
+            pill.textContent = badge;
+            pill.addEventListener('click', () => {
+                if (selectedBadges.has(badge)) selectedBadges.delete(badge);
+                else selectedBadges.add(badge);
+                updateTagsHidden();
+                renderBadges();
+            });
+            container.appendChild(pill);
+        });
+    }
+
+    function updateTagsHidden() {
+        document.getElementById('tagsHidden').value = Array.from(selectedBadges).join(',');
+    }
+
+    document.getElementById('badgeAddBtn').addEventListener('click', () => {
+        const val = document.getElementById('badgeAddInput').value.trim();
+        if (!val) return;
+        if (!badgeOptions.includes(val)) {
+            badgeOptions.push(val);
+            saveBadgeOptions(badgeOptions);
+        }
+        selectedBadges.add(val);
+        updateTagsHidden();
+        renderBadges();
+        document.getElementById('badgeAddInput').value = '';
+    });
+    document.getElementById('badgeAddInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); document.getElementById('badgeAddBtn').click(); }
+    });
+
+    renderBadges();
+
+    renderSpecFields();
+</script>
+{% endblock %}

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}{% if query %}Search: {{ query }}{% else %}All Pieces – Zimona{% endif %}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .search-header {
+        background: linear-gradient(135deg, var(--maroon-deep) 0%, var(--maroon) 100%);
+        padding: 48px 40px;
+        margin-bottom: 48px;
+    }
+    .search-header-inner { max-width: 1400px; margin: 0 auto; }
+    .search-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(255,255,255,0.65); margin-bottom: 10px; }
+    .search-title { font-family: 'Playfair Display', serif; font-size: 38px; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .search-title em { font-style: italic; color: rgba(255,255,255,0.8); }
+    .search-meta { font-size: 13px; color: rgba(255,255,255,0.55); margin-top: 8px; }
+
+    .search-body { max-width: 1400px; margin: 0 auto; padding: 0 40px 64px; }
+
+    .empty-state { text-align: center; padding: 80px 0; }
+    .empty-ornament { font-family: 'Playfair Display', serif; font-size: 64px; color: var(--border); margin-bottom: 20px; line-height: 1; }
+    .empty-title { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 600; margin-bottom: 10px; }
+    .empty-sub { font-size: 14px; color: var(--muted); margin-bottom: 32px; }
+
+    .search-form-large { display: flex; max-width: 520px; margin: 0 auto; border: 2px solid var(--maroon); }
+    .search-form-large input { flex: 1; background: #fff; border: none; padding: 14px 18px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--charcoal); outline: none; }
+    .search-form-large input::placeholder { color: #C5BBB0; }
+    .search-form-large button { background: var(--maroon); color: #fff; border: none; padding: 14px 26px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 0.25s; }
+    .search-form-large button:hover { background: var(--maroon-deep); }
+
+    .products-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+
+    .product-card { text-decoration: none; color: inherit; display: block; background: #fff; border: 1px solid var(--border); transition: border-color 0.5s ease; }
+    .product-card:hover { border-color: var(--maroon); }
+
+    /* Image container — all layers sit on top of each other */
+    .product-img { aspect-ratio: 1; overflow: hidden; position: relative; background: var(--ivory); }
+
+    /* Primary image — always visible, never moves */
+    .product-img .img-primary { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+    /* Secondary image — crossfades in on hover */
+    .product-img .img-secondary { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 0.65s ease; }
+    .product-card:hover .img-secondary { opacity: 1; }
+
+    /* Placeholder when no images at all */
+    .product-img-placeholder { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+    .product-img-placeholder span { font-family: 'Playfair Display', serif; font-size: 48px; color: var(--border); }
+
+    /* Info overlay — shown on hover when there's no secondary image */
+    .product-img .img-overlay {
+        position: absolute; inset: 0;
+        background: rgba(250, 246, 240, 0.92);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 10px;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+        padding: 24px;
+        text-align: center;
+    }
+    .product-card:hover .img-overlay { opacity: 1; }
+    .img-overlay-rule { width: 32px; height: 1px; background: var(--maroon); opacity: 0.5; }
+    .img-overlay-name { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: var(--charcoal); line-height: 1.35; }
+    .img-overlay-price { font-size: 13px; letter-spacing: 0.06em; color: var(--maroon); font-weight: 400; }
+    .img-overlay-cta { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+
+    .product-badge { position: absolute; top: 10px; left: 10px; background: var(--maroon); color: #fff; font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; z-index: 2; }
+    .product-info { padding: 14px 16px 18px; }
+    .product-name { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 600; line-height: 1.35; margin-bottom: 6px; transition: color 0.4s ease; }
+    .product-card:hover .product-name { color: var(--maroon); }
+    .product-price { font-size: 14px; font-weight: 400; color: var(--maroon); }
+</style>
+{% endblock %}
+
+{% block main_class %}{% endblock %}
+
+{% block content %}
+<div class="search-header">
+    <div class="search-header-inner">
+        <p class="search-eyebrow">{% if query %}Search Results{% else %}Collections{% endif %}</p>
+        <h1 class="search-title">
+            {% if query %}Showing results for <em>"{{ query }}"</em>
+            {% else %}All Silver Pieces{% endif %}
+        </h1>
+        {% if query and products %}<p class="search-meta">{{ products|length }} piece{{ 's' if products|length != 1 else '' }} found</p>{% endif %}
+    </div>
+</div>
+
+<div class="search-body">
+{% if not query %}
+<div class="empty-state">
+    <div class="empty-ornament">◈</div>
+    <h2 class="empty-title">Discover Your Perfect Silver Piece</h2>
+    <p class="empty-sub">Search our collection by name, material, or style</p>
+    <form action="/search" method="get" class="search-form-large">
+        <input type="text" name="q" placeholder="e.g. silver ring, pearl necklace…">
+        <button type="submit">Search</button>
+    </form>
+</div>
+
+{% elif products %}
+<div class="products-grid">
+    {% for p in products %}
+    <a href="/product/{{ p.slug }}" class="product-card">
+        <div class="product-img">
+            {% if p.images %}
+                <img class="img-primary" src="/uploads/{{ p.images[0] }}" alt="{{ p.name }}" loading="lazy">
+                {% if p.images|length > 1 %}
+                    {# Secondary image — crossfades in on hover #}
+                    <img class="img-secondary" src="/uploads/{{ p.images[1] }}" alt="{{ p.name }}" loading="lazy">
+                {% else %}
+                    {# No secondary image — show elegant info overlay instead #}
+                    <div class="img-overlay">
+                        <div class="img-overlay-rule"></div>
+                        <span class="img-overlay-name">{{ p.name }}</span>
+                        <span class="img-overlay-price">₹{{ "{:,.0f}".format(p.price) }}</span>
+                        <div class="img-overlay-rule"></div>
+                        <span class="img-overlay-cta">View Piece</span>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="product-img-placeholder"><span>◇</span></div>
+                <div class="img-overlay">
+                    <div class="img-overlay-rule"></div>
+                    <span class="img-overlay-name">{{ p.name }}</span>
+                    <span class="img-overlay-price">₹{{ "{:,.0f}".format(p.price) }}</span>
+                    <div class="img-overlay-rule"></div>
+                    <span class="img-overlay-cta">View Piece</span>
+                </div>
+            {% endif %}
+            <span class="product-badge">{{ (p.tags or '925 Silver').split(',')[0].strip() }}</span>
+        </div>
+        <div class="product-info">
+            <h3 class="product-name">{{ p.name }}</h3>
+            <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-ornament">◇</div>
+    <h2 class="empty-title">No pieces found</h2>
+    <p class="empty-sub">Try searching with different terms — perhaps a material, style, or occasion.</p>
+    <a href="/search" class="btn-outline">Browse all pieces</a>
+</div>
+{% endif %}
+</div>
+{% endblock %}

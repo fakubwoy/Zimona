@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ product.meta_title or product.name }} – Zimona{% endblock %}
+
+{% block extra_head %}
+<meta name="description" content="{{ product.meta_description or product.description|truncate(160) }}">
+<meta name="keywords" content="{{ product.meta_keywords }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org/",
+  "@type": "Product",
+  "name": "{{ product.name }}",
+  "image": [{% for img in product.images %}"{{ url_for('uploaded_file', filename=img, _external=True) }}"{% if not loop.last %},{% endif %}{% endfor %}],
+  "description": "{{ product.description }}",
+  "sku": "{{ product.id }}",
+  "offers": { "@type": "Offer", "priceCurrency": "INR", "price": "{{ product.price }}", "availability": "https://schema.org/InStock" }
+}
+</script>
+<style>
+    .breadcrumb { font-size: 12px; color: var(--muted); margin-bottom: 36px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
+    .breadcrumb a:hover { color: var(--maroon); }
+    .breadcrumb-sep { color: var(--border); }
+
+    .product-layout { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 72px; align-items: start; }
+
+    .gallery-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .gallery-grid.single { grid-template-columns: 1fr; }
+    .gallery-img { aspect-ratio: 1; overflow: hidden; background: var(--ivory); border: 1px solid var(--border); }
+    .gallery-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+    .gallery-img:hover img { transform: scale(1.04); }
+    .gallery-img:first-child:nth-last-child(1), .gallery-img:first-child:nth-last-child(3) ~ .gallery-img:last-child { grid-column: 1 / -1; }
+    .gallery-empty { aspect-ratio: 4/3; background: var(--ivory); display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); }
+    .gallery-empty span { font-family: 'Playfair Display', serif; font-size: 80px; color: var(--border); }
+
+    .product-info { position: sticky; top: 108px; }
+    .product-category { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--maroon); margin-bottom: 12px; font-weight: 500; }
+    .product-title { font-family: 'Playfair Display', serif; font-size: 38px; font-weight: 700; line-height: 1.2; color: var(--charcoal); margin-bottom: 16px; }
+    .product-badge-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .p-badge { background: var(--ivory); border: 1px solid var(--border); padding: 4px 12px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+    .p-badge.maroon { background: #FDF0F0; border-color: var(--maroon); color: var(--maroon); }
+    .product-price-display { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; color: var(--maroon); margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--border); }
+    .product-desc { font-size: 15px; line-height: 1.8; color: var(--muted); margin-bottom: 36px; }
+
+    .specs-title { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--charcoal); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--maroon); font-weight: 500; display: inline-block; }
+    .specs-table { width: 100%; border-collapse: collapse; margin-bottom: 36px; }
+    .specs-table tr { border-bottom: 1px solid var(--border); }
+    .specs-table td { padding: 11px 0; font-size: 13px; line-height: 1.5; }
+    .specs-table td:first-child { color: var(--muted); width: 44%; }
+    .specs-table td:last-child { color: var(--charcoal); font-weight: 400; }
+
+    .enquire-btn { width: 100%; text-align: center; display: block; box-sizing: border-box; padding: 16px 36px; font-size: 13px; letter-spacing: 0.14em; }
+    .enquire-note { font-size: 12px; color: var(--muted); margin-top: 14px; text-align: center; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .enquire-note span { display: flex; align-items: center; gap: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="/">Home</a>
+    <span class="breadcrumb-sep">/</span>
+    {% if product.category %}
+    <a href="/search?q={{ product.category.name }}">{{ product.category.name }}</a>
+    <span class="breadcrumb-sep">/</span>
+    {% endif %}
+    <span>{{ product.name }}</span>
+</div>
+
+<div class="product-layout">
+    <div>
+        {% if product.images %}
+        <div class="gallery-grid {% if product.images|length == 1 %}single{% endif %}">
+            {% for img in product.images %}
+            <div class="gallery-img">
+                <img src="/uploads/{{ img }}" alt="{{ product.name }}" loading="{% if loop.first %}eager{% else %}lazy{% endif %}">
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="gallery-empty"><span>◇</span></div>
+        {% endif %}
+    </div>
+
+    <div class="product-info">
+        {% if product.category %}<p class="product-category">{{ product.category.name }}</p>{% endif %}
+        <h1 class="product-title">{{ product.name }}</h1>
+        <div class="product-badge-row">
+            <span class="p-badge maroon">925 Sterling Silver</span>
+            <span class="p-badge">Certified</span>
+            <span class="p-badge">Hallmarked</span>
+        </div>
+        <div class="product-price-display">₹{{ "{:,.0f}".format(product.price) }}</div>
+        {% if product.description %}<p class="product-desc">{{ product.description }}</p>{% endif %}
+        {% if product.specs %}
+        <div>
+            <p class="specs-title">Details &amp; Materials</p>
+            <table class="specs-table">
+                {% for key, val in product.specs.items() %}
+                <tr><td>{{ key }}</td><td>{{ val }}</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+        {% endif %}
+        <a href="mailto:contact@zimona.in?subject=Enquiry: {{ product.name }}" class="btn-primary enquire-btn">Enquire About This Piece</a>
+        <div class="enquire-note">
+            <span>✓ Free consultation</span>
+            <span>✓ Secure packaging</span>
+            <span>✓ Certified authenticity</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

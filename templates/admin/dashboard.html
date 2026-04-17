@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard – Zimona{% endblock %}
+
+{% block extra_head %}
+<style>
+    .admin-header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 28px; border-bottom: 2px solid var(--maroon); margin-bottom: 40px; }
+    .admin-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--maroon); margin-bottom: 8px; font-weight: 500; }
+    .admin-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; }
+    .admin-actions { display: flex; gap: 12px; }
+
+    /* AI PANEL */
+    .ai-panel { background: #fff; border: 1px solid var(--border); border-left: 4px solid var(--maroon); padding: 32px; margin-bottom: 48px; }
+    .ai-panel-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .ai-panel-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+    .ai-input-row { display: flex; border: 1px solid var(--border); }
+    .ai-input-row input { flex: 1; background: transparent; border: none; padding: 13px 16px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--charcoal); outline: none; }
+    .ai-input-row input::placeholder { color: #C5BBB0; }
+    .ai-input-row button { background: var(--maroon); color: #fff; border: none; padding: 13px 28px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 0.25s; white-space: nowrap; }
+    .ai-input-row button:hover { background: var(--maroon-deep); }
+    .ai-result { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px; }
+    .ai-result-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .ai-warning { color: #C0392B; font-weight: 500; }
+    .ai-json { background: var(--ivory); padding: 16px; font-size: 12px; font-family: 'Courier New', monospace; overflow-x: auto; border: 1px solid var(--border); color: var(--charcoal); margin-bottom: 14px; line-height: 1.6; }
+
+    /* CATEGORY SECTIONS */
+    .category-section { margin-bottom: 16px; border: 1px solid var(--border); background: #fff; }
+    .category-toggle { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; cursor: pointer; transition: background 0.2s; user-select: none; border: none; background: transparent; width: 100%; text-align: left; }
+    .category-toggle:hover { background: var(--ivory); }
+    .cat-toggle-left { display: flex; align-items: center; gap: 14px; }
+    .cat-chevron { width: 16px; height: 16px; color: var(--muted); transition: transform 0.25s; flex-shrink: 0; }
+    .cat-chevron.open { transform: rotate(90deg); }
+    .cat-toggle-name { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; color: var(--charcoal); }
+    .cat-toggle-count { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+    /* PRODUCT TABLE */
+    .product-table { width: 100%; border-collapse: collapse; border-top: 1px solid var(--border); }
+    .product-table thead tr { background: var(--ivory); }
+    .product-table th { padding: 11px 18px; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 500; text-align: left; }
+    .product-table th:last-child { text-align: right; }
+    .product-table td { padding: 14px 18px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .product-table td:last-child { text-align: right; }
+    .product-table tr:last-child td { border-bottom: none; }
+    .product-thumbnail { width: 42px; height: 42px; object-fit: cover; background: var(--ivory); display: block; border: 1px solid var(--border); }
+    .thumb-placeholder { width: 42px; height: 42px; background: var(--ivory); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 18px; color: var(--border); border: 1px solid var(--border); }
+    .product-name-cell { font-weight: 500; color: var(--charcoal); }
+    .product-price-cell { font-size: 13px; font-weight: 500; color: var(--maroon); }
+    .table-action-link { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; color: var(--muted); transition: color 0.2s; font-weight: 500; }
+    .table-action-link:hover { color: var(--maroon); }
+    .table-action-delete { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; background: none; border: none; cursor: pointer; color: var(--muted); transition: color 0.2s; font-family: 'DM Sans', sans-serif; margin-left: 14px; padding: 0; font-weight: 500; }
+    .table-action-delete:hover { color: #C0392B; }
+    .empty-category { padding: 32px; text-align: center; font-size: 13px; color: var(--muted); font-style: italic; border-top: 1px solid var(--border); }
+    .inline { display: inline; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-header">
+    <div>
+        <p class="admin-eyebrow">Administration</p>
+        <h1 class="admin-title">Catalog Management</h1>
+    </div>
+    <div class="admin-actions">
+        <a href="/admin/categories" class="btn-outline">Categories</a>
+        <a href="/admin/product/new" class="btn-primary">+ Add Product</a>
+    </div>
+</div>
+
+<!-- AI ASSISTANT -->
+<div class="ai-panel">
+    <h2 class="ai-panel-title">AI Assistant</h2>
+    <p class="ai-panel-sub">Use natural language to update your catalog — e.g. "increase all ring prices by 10%"</p>
+    <div class="ai-input-row">
+        <input type="text" id="aiCommand" placeholder="Type a catalog command…">
+        <button id="aiSubmit">Run Command</button>
+    </div>
+    <div id="aiResult" class="ai-result" style="display:none;">
+        <div class="ai-result-label">
+            <span>Proposed Action</span>
+            <span id="aiAffectedCount"></span>
+        </div>
+        <pre id="aiActionJson" class="ai-json"></pre>
+        <button id="aiConfirm" class="btn-primary">Apply Action</button>
+    </div>
+</div>
+
+<!-- CATEGORIES & PRODUCTS -->
+{% for category in categories %}
+<div class="category-section">
+    <button class="category-toggle" data-category-id="{{ category.id }}">
+        <div class="cat-toggle-left">
+            <svg class="cat-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="cat-toggle-name">{{ category.name }}</span>
+        </div>
+        <span class="cat-toggle-count">{{ category.products|length }} piece{{ 's' if category.products|length != 1 else '' }}</span>
+    </button>
+    <div class="category-content" id="category-{{ category.id }}-content" style="display:none;">
+        {% if category.products %}
+        <table class="product-table">
+            <thead><tr><th>Image</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead>
+            <tbody>
+                {% for p in category.products %}
+                <tr>
+                    <td>{% if p.images %}<img src="/uploads/{{ p.images[0] }}" class="product-thumbnail" alt="{{ p.name }}">{% else %}<div class="thumb-placeholder">◇</div>{% endif %}</td>
+                    <td class="product-name-cell">{{ p.name }}</td>
+                    <td class="product-price-cell">₹{{ "{:,.0f}".format(p.price) }}</td>
+                    <td>
+                        <a href="/admin/product/{{ p.id }}/edit" class="table-action-link">Edit</a>
+                        <form action="/admin/product/{{ p.id }}/delete" method="POST" class="inline" onsubmit="return confirm('Delete {{ p.name }}?')">
+                            <button class="table-action-delete">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-category">No products in this category yet.</div>
+        {% endif %}
+    </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll('.category-toggle').forEach(toggle => {
+        toggle.addEventListener('click', function() {
+            const id = this.dataset.categoryId;
+            const content = document.getElementById(`category-${id}-content`);
+            const chevron = this.querySelector('.cat-chevron');
+            const isHidden = content.style.display === 'none';
+            content.style.display = isHidden ? 'block' : 'none';
+            chevron.classList.toggle('open', isHidden);
+        });
+    });
+
+    let currentAction = null;
+    document.getElementById('aiSubmit').addEventListener('click', async () => {
+        const cmd = document.getElementById('aiCommand').value.trim();
+        if (!cmd) return;
+        const btn = document.getElementById('aiSubmit');
+        btn.textContent = 'Processing…'; btn.disabled = true;
+        try {
+            const res = await fetch('/admin/ai-assistant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: cmd }) });
+            const data = await res.json();
+            currentAction = data;
+            document.getElementById('aiActionJson').textContent = JSON.stringify(data, null, 2);
+            const filters = data.filters || {};
+            const affectedSpan = document.getElementById('aiAffectedCount');
+            if (!Object.keys(filters).length) {
+                affectedSpan.innerHTML = '<span class="ai-warning">⚠ Will affect ALL products</span>';
+            } else {
+                affectedSpan.textContent = `Filters: ${JSON.stringify(filters)}`;
+            }
+            document.getElementById('aiResult').style.display = 'block';
+        } catch(e) { alert('Failed to parse command.'); }
+        finally { btn.textContent = 'Run Command'; btn.disabled = false; }
+    });
+
+    document.getElementById('aiConfirm').addEventListener('click', async () => {
+        if (!currentAction) return;
+        if (!confirm('Apply this action to your catalog?')) return;
+        const res = await fetch('/admin/apply-action', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(currentAction) });
+        const data = await res.json();
+        if (data.error) { alert(`Error: ${data.error}`); }
+        else { alert(`Updated ${data.updated} product(s) successfully.`); location.reload(); }
+    });
+</script>
+{% endblock %}

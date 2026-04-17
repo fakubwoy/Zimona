@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Categories – Zimona Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 28px; border-bottom: 2px solid var(--maroon); margin-bottom: 40px; }
+    .page-eyebrow { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--maroon); margin-bottom: 8px; font-weight: 500; }
+    .page-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; }
+
+    .add-form { display: flex; max-width: 460px; border: 2px solid var(--maroon); margin-bottom: 40px; }
+    .add-form input { flex: 1; background: #fff; border: none; padding: 13px 16px; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--charcoal); outline: none; }
+    .add-form input::placeholder { color: #C5BBB0; }
+    .add-form button { background: var(--maroon); color: #fff; border: none; padding: 13px 28px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: background 0.25s; white-space: nowrap; }
+    .add-form button:hover { background: var(--maroon-deep); }
+
+    .categories-list { background: #fff; border: 1px solid var(--border); }
+    .category-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--border); transition: background 0.2s; }
+    .category-row:last-child { border-bottom: none; }
+    .category-row:hover { background: var(--ivory); }
+    .category-row-name { font-family: 'Playfair Display', serif; font-size: 19px; font-weight: 600; color: var(--charcoal); }
+    .delete-btn { background: none; border: none; font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); cursor: pointer; padding: 0; transition: color 0.2s; font-weight: 500; }
+    .delete-btn:hover { color: #C0392B; }
+    .cat-thumb { width: 52px; height: 52px; object-fit: cover; border: 1px solid var(--border); flex-shrink: 0; }
+    .cat-thumb-placeholder { width: 52px; height: 52px; background: var(--ivory); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 20px; color: var(--border); flex-shrink: 0; }
+    .upload-label { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); cursor: pointer; font-weight: 500; transition: color 0.2s; }
+    .upload-label:hover { color: var(--maroon); }
+    .upload-input { display: none; }
+    .cat-row-actions { display: flex; align-items: center; gap: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="page-eyebrow">Administration</p>
+        <h1 class="page-title">Categories</h1>
+    </div>
+    <a href="/admin" class="btn-outline">&larr; Back to Dashboard</a>
+</div>
+
+<form method="POST" class="add-form">
+    <input type="text" name="name" placeholder="New category name…" required>
+    <button type="submit">Add Category</button>
+</form>
+
+<div class="categories-list">
+    {% for cat in categories %}
+    <div class="category-row">
+        {% if cat.image %}
+        <img src="/uploads/{{ cat.image }}" class="cat-thumb" alt="{{ cat.name }}">
+        {% else %}
+        <div class="cat-thumb-placeholder">◇</div>
+        {% endif %}
+        <span class="category-row-name" style="flex:1; margin-left: 16px;">{{ cat.name }}</span>
+        <div class="cat-row-actions">
+            <form action="/admin/category/{{ cat.id }}/upload-image" method="POST" enctype="multipart/form-data" style="display:inline;">
+                <label class="upload-label" for="img-{{ cat.id }}">
+                    {% if cat.image %}Change Photo{% else %}Add Photo{% endif %}
+                </label>
+                <input class="upload-input" id="img-{{ cat.id }}" type="file" name="image" accept="image/*" onchange="this.form.submit()">
+            </form>
+            <form action="/admin/category/{{ cat.id }}/delete" method="POST" onsubmit="return confirm('Delete \'{{ cat.name }}\'? Products may lose their category.')">
+                <button class="delete-btn">Remove</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div style="padding: 40px; text-align: center; color: var(--muted); font-size: 14px; font-style: italic;">
+        No categories yet. Add one above.
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
