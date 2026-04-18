@@ -102,8 +102,9 @@
                         </div>
                     </div>
                     <div class="field-group">
-                        <label class="field-label">Description</label>
-                        <textarea name="description" rows="5" class="field-input">{{ product.description if product else '' }}</textarea>
+                        <label class="field-label">Description <span style="color:var(--muted);font-size:10px;">(aim for 80–150+ words)</span></label>
+                        <textarea name="description" id="product_description" rows="5" class="field-input" oninput="updateDescCount(this.value)">{{ product.description if product else '' }}</textarea>
+                        <div id="desc_count_warn" style="margin-top:5px;font-size:11px;color:var(--muted);">{{ (product.description or '')|length }} chars</div>
                     </div>
                 </div>
             </div>
@@ -151,6 +152,7 @@
                     <div class="field-group">
                         <label class="field-label">Meta Title <span style="color:var(--muted);font-size:10px;">(≤60 chars)</span></label>
                         <input type="text" name="meta_title" id="meta_title" maxlength="60" value="{{ product.meta_title if product else '' }}" class="field-input">
+                        <div id="meta_title_warn" style="display:none;margin-top:5px;font-size:11px;color:#B7660A;">⚠ No custom title set — Google will use the default template. Use AI to generate one.</div>
                     </div>
                     <div class="field-group">
                         <label class="field-label">Meta Description <span style="color:var(--muted);font-size:10px;">(≤160 chars)</span></label>
@@ -205,6 +207,25 @@
                                 </label>
                             </div>
                         </div>
+                        <!-- RATINGS -->
+                        <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:4px;">
+                            <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--charcoal);font-weight:500;margin-bottom:6px;">Customer Rating</div>
+                            <p style="font-size:11px;color:var(--muted);margin-bottom:14px;">Used in Google rich results (star ratings in search). Only shown when both fields are filled.</p>
+                            <div class="form-row">
+                                <div class="field-group">
+                                    <label class="field-label">Rating Value <span style="color:var(--muted);font-weight:300;text-transform:none;letter-spacing:0;">(1.0 – 5.0)</span></label>
+                                    <input type="number" name="rating_value" step="0.01" min="1" max="5" placeholder="e.g. 4.5" value="{{ '%.2f'|format(product.rating_value|float) if product and product.rating_value else '' }}" class="field-input">
+                                </div>
+                                <div class="field-group">
+                                    <label class="field-label">Review Count</label>
+                                    <input type="number" name="rating_count" min="0" step="1" placeholder="e.g. 128" value="{{ product.rating_count if product and product.rating_count else '' }}" class="field-input">
+                                </div>
+                            </div>
+                            <!-- Star preview -->
+                            <div id="ratingPreview" style="margin-top:8px;font-size:12px;color:var(--muted);display:none;">
+                                Preview: <span id="ratingStars" style="color:#F4A11D;letter-spacing:2px;"></span> <span id="ratingText"></span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -236,6 +257,28 @@
 
 {% block scripts %}
 <script>
+    // ── SEO warnings ──
+    function updateDescCount(val) {
+        const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+        const el = document.getElementById('desc_count_warn');
+        if (!el) return;
+        const tooShort = words > 0 && words < 80;
+        const good = words >= 80;
+        el.textContent = words + ' words' + (good ? ' ✓' : tooShort ? ' — aim for 80+ words for best SEO' : ' — add a description to avoid thin content penalty');
+        el.style.color = good ? '#2A6B3C' : tooShort ? '#B7660A' : '#C0392B';
+    }
+    function checkMetaTitle() {
+        const val = document.getElementById('meta_title').value.trim();
+        const warn = document.getElementById('meta_title_warn');
+        if (warn) warn.style.display = val ? 'none' : 'block';
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const descEl = document.getElementById('product_description');
+        if (descEl) updateDescCount(descEl.value);
+        const mtEl = document.getElementById('meta_title');
+        if (mtEl) { checkMetaTitle(); mtEl.addEventListener('input', checkMetaTitle); }
+    });
+
     // ------------------------------------------------------------
     // 1. Category Modal
     // ------------------------------------------------------------
@@ -513,5 +556,29 @@
 
     renderBadges();
     renderSpecFields();
+
+    // Star rating preview
+    const ratingValInput = document.querySelector('input[name="rating_value"]');
+    const ratingCntInput = document.querySelector('input[name="rating_count"]');
+    const ratingPreview = document.getElementById('ratingPreview');
+    const ratingStars = document.getElementById('ratingStars');
+    const ratingText = document.getElementById('ratingText');
+
+    function updateRatingPreview() {
+        const val = parseFloat(ratingValInput.value);
+        const cnt = parseInt(ratingCntInput.value);
+        if (!val || !cnt || val < 1 || val > 5) { ratingPreview.style.display = 'none'; return; }
+        ratingPreview.style.display = 'block';
+        const full = Math.floor(val);
+        const half = (val - full) >= 0.5;
+        let stars = '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - (half ? 1 : 0));
+        ratingStars.textContent = stars;
+        ratingText.textContent = `${val.toFixed(1)} / 5 · ${cnt.toLocaleString()} review${cnt !== 1 ? 's' : ''}`;
+    }
+    if (ratingValInput) {
+        ratingValInput.addEventListener('input', updateRatingPreview);
+        ratingCntInput.addEventListener('input', updateRatingPreview);
+        updateRatingPreview();
+    }
 </script>
 {% endblock %}

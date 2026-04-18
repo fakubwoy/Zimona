@@ -1,5 +1,37 @@
 {% extends "base.html" %}
-{% block title %}Zimona – Fine Silver Jewellery{% endblock %}
+{% block title %}Zimona – Buy 925 Sterling Silver Jewellery Online India{% endblock %}
+{% block meta_description %}Shop handcrafted 925 sterling silver jewellery online at Zimona. Rings, necklaces, earrings, bracelets, bangles and anklets. 100% genuine, cadmium-free. Free shipping above Rs.1999.{% endblock %}
+{% block meta_keywords %}925 sterling silver jewellery India, buy silver jewellery online, silver rings, silver necklaces, silver earrings, silver bracelets, silver anklets, handcrafted silver jewellery{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ request.url_root }}">{% endblock %}
+{% block og_title %}Zimona – Buy 925 Sterling Silver Jewellery Online India{% endblock %}
+{% block og_description %}Handcrafted 925 sterling silver jewellery. Rings, necklaces, earrings, bracelets & anklets. Genuine, cadmium-free. Free shipping above Rs.1999.{% endblock %}
+{% block twitter_title %}Zimona – Buy 925 Sterling Silver Jewellery Online India{% endblock %}
+{% block twitter_description %}Handcrafted 925 sterling silver jewellery. Free shipping above Rs.1999.{% endblock %}
+{% block jsonld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Zimona",
+  "url": "{{ request.url_root }}",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": { "@type": "EntryPoint", "urlTemplate": "{{ request.url_root.rstrip('/') }}/search?q={search_term_string}" },
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Zimona",
+  "url": "{{ request.url_root }}",
+  "description": "Handcrafted 925 sterling silver jewellery — rings, necklaces, earrings, bracelets and anklets.",
+  "contactPoint": { "@type": "ContactPoint", "contactType": "customer service", "email": "contact@zimona.com" }
+}
+</script>
+{% endblock %}
 {% block main_class %}{% endblock %}
 
 {% block extra_head %}
@@ -394,16 +426,13 @@
     .product-card:hover .product-name { color: var(--maroon); }
     .product-price { font-size: 15px; font-weight: 500; color: var(--maroon); }
     .product-price-old { font-size: 12px; color: var(--muted); text-decoration: line-through; margin-left: 6px; }
-    .card-atc-btn {
-        margin-top: 12px; width: 100%;
-        background: transparent; color: var(--charcoal);
-        border: 1px solid var(--border);
-        padding: 9px; font-family: 'DM Sans', sans-serif;
-        font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
-        cursor: pointer;
-        transition: background 0.25s, color 0.25s, border-color 0.25s;
-    }
-    .card-atc-btn:hover { background: var(--maroon); color: #fff; border-color: var(--maroon); }
+    .product-rating { display: flex; align-items: center; gap: 5px; margin: 4px 0 0; }
+    .rating-stars { display: flex; gap: 2px; }
+    .rating-star { font-size: 11px; color: var(--border); line-height: 1; }
+    .rating-star.filled { color: #C8922A; }
+    .rating-star.half { position: relative; color: var(--border); }
+    .rating-star.half::before { content: '★'; position: absolute; left: 0; color: #C8922A; width: 50%; overflow: hidden; }
+    .rating-count { font-size: 11px; color: var(--muted); }
     /* Budget Cards — Maroon Festive Style */
 .budget-card-maroon {
     display: block;
@@ -550,7 +579,7 @@
                 </div>
             </div>
             <div class="slide-img-panel" style="overflow:hidden;">
-                <img src="/assets/jewlery.png" alt="Silver earrings collection" style="width:800px;max-width:100%;height:760px;object-fit:contain;object-position:center;display:block;flex-shrink:0;filter:drop-shadow(0 12px 48px rgba(0,0,0,0.45));animation:heroImgIn 0.75s 0.5s cubic-bezier(0.4,0,0.2,1) both;">
+                <img src="/assets/jewlery.png" alt="Silver earrings collection" style="width:800px;max-width:100%;height:760px;object-fit:contain;object-position:center;display:block;flex-shrink:0;filter:drop-shadow(0 12px 48px rgba(0,0,0,0.45));animation:heroImgIn 0.75s 0.5s cubic-bezier(0.4,0,0.2,1) both;" loading="eager" fetchpriority="high">
             </div>
         </div>
     </div>
@@ -569,7 +598,7 @@
                 </h1>
                 <p class="hero-sub">From delicate studs to bold jhumkas — our earring collection is designed to frame your beauty. Each pair hallmarked for purity.</p>
                 <div class="hero-ctas">
-                    <a href="/search?q=Earrings" class="btn-white">Shop Earrings</a>
+                    <a href="/category/earrings" class="btn-white">Shop Earrings</a>
                     <a href="/search?q=Jhumka" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Shop Jhumkas</a>
                 </div>
             </div>
@@ -593,7 +622,7 @@
                 </h1>
                 <p class="hero-sub">Stackable bands, gemstone rings, and intricately carved cocktail rings. Discover a ring for every finger and every mood.</p>
                 <div class="hero-ctas">
-                    <a href="/search?q=Rings" class="btn-white">Shop Rings</a>
+                    <a href="/category/rings" class="btn-white">Shop Rings</a>
                     <a href="/search?q=Gemstone" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Gemstone Rings</a>
                 </div>
             </div>
@@ -617,7 +646,7 @@
                 </h1>
                 <p class="hero-sub">From minimalist chains to layered temple-inspired pendants — our necklace collection is crafted to elevate every outfit, every occasion.</p>
                 <div class="hero-ctas">
-                    <a href="/search?q=Necklaces" class="btn-white">Shop Necklaces</a>
+                    <a href="/category/necklaces" class="btn-white">Shop Necklaces</a>
                     <a href="/search?q=Pendant" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Pendant Collection</a>
                 </div>
             </div>
@@ -652,7 +681,7 @@
         <p class="section-sub">Discover the most trending categories in our collection</p>
     </div>
     <div class="collections-grid">
-        <a href="/search?q=Necklaces" class="collection-card tall">
+        <a href="/category/necklaces" class="collection-card tall">
             <div class="collection-card-bg">
                 <img src="/assets/necklace-pattern.png" alt="" aria-hidden="true">
             </div>
@@ -662,7 +691,7 @@
                 <span class="collection-link">Shop Now →</span>
             </div>
         </a>
-        <a href="/search?q=Earrings" class="collection-card tall">
+        <a href="/category/earrings" class="collection-card tall">
             <div class="collection-card-bg" style="background: linear-gradient(135deg, #3D0F0F 0%, #7A2020 100%);">
                 <img src="/assets/earring-pattern.png" alt="" aria-hidden="true">
             </div>
@@ -677,7 +706,7 @@
     <!-- CATEGORIES PHOTO GRID -->
     <div class="cat-photo-grid">
         {% for cat in categories %}
-        <a href="/search?q={{ cat.name }}" class="cat-photo-card">
+        <a href="/category/{{ cat.slug }}" class="cat-photo-card">
             {% if cat.image %}
             <img src="/assets/categories/{{ cat.image }}" alt="{{ cat.name }}" class="cat-photo-img" loading="lazy">
             {% else %}
@@ -707,7 +736,7 @@
         <a href="/product/{{ p.slug }}" class="product-card">
             <div class="product-img">
                 {% if p.images %}
-                    <img class="img-primary" src="/uploads/{{ p.images[0] }}" alt="{{ p.name }}" loading="lazy">
+                    <img class="img-primary" src="/uploads/{{ p.images[0] }}" alt="{{ p.name }}" loading="{{ 'eager' if loop.index <= 4 else 'lazy' }}" {% if loop.index <= 4 %}fetchpriority="high"{% endif %}>
                     {% if p.images|length > 1 %}
                         <img class="img-secondary" src="/uploads/{{ p.images[1] }}" alt="{{ p.name }}" loading="lazy">
                     {% else %}
@@ -730,18 +759,16 @@
                     </div>
                 {% endif %}
                 <span class="product-badge">{{ (p.tags or '925 Silver').split(',')[0].strip() }}</span>
-                <button
-                    class="wishlist-heart"
-                    data-id="{{ p.id }}"
-                    onclick="event.preventDefault(); toggleWishlist('{{ p.id }}', '{{ p.name|replace("'", "\\'") }}', '{{ p.price }}', '{{ ("/uploads/" + p.images[0]) if p.images else "" }}', this)"
-                    title="Add to Wishlist">
-                    <svg width="17" height="17" fill="#fff" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                </button>
             </div>
             <div class="product-info">
                 <h3 class="product-name">{{ p.name }}</h3>
                 <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
-                <button onclick="event.preventDefault();addToCart('{{ p.id }}','{{ p.name|replace("'","\\'") }}','{{ p.price }}','{{ ("/uploads/" + p.images[0]) if p.images else "" }}')" class="card-atc-btn">Add to Cart</button>
+                {% if p.rating_value and p.rating_count %}
+                <div class="product-rating">
+                    <div class="rating-stars">{% for i in range(1,6) %}{% if p.rating_value >= i %}<span class="rating-star filled">★</span>{% elif p.rating_value >= i - 0.5 %}<span class="rating-star half">★</span>{% else %}<span class="rating-star">★</span>{% endif %}{% endfor %}</div>
+                    <span class="rating-count">({{ p.rating_count }})</span>
+                </div>
+                {% endif %}
             </div>
         </a>
         {% endfor %}
@@ -822,18 +849,16 @@
                     </div>
                 {% endif %}
                 <span class="product-badge">New</span>
-                <button
-                    class="wishlist-heart"
-                    data-id="{{ p.id }}"
-                    onclick="event.preventDefault(); toggleWishlist('{{ p.id }}', '{{ p.name|replace("'", "\\'") }}', '{{ p.price }}', '{{ ("/uploads/" + p.images[0]) if p.images else "" }}', this)"
-                    title="Add to Wishlist">
-                    <svg width="17" height="17" fill="#fff" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                </button>
             </div>
             <div class="product-info">
                 <h3 class="product-name">{{ p.name }}</h3>
                 <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
-                <button onclick="event.preventDefault();addToCart('{{ p.id }}','{{ p.name|replace("'","\\'") }}','{{ p.price }}','{{ ("/uploads/" + p.images[0]) if p.images else "" }}')" class="card-atc-btn">Add to Cart</button>
+                {% if p.rating_value and p.rating_count %}
+                <div class="product-rating">
+                    <div class="rating-stars">{% for i in range(1,6) %}{% if p.rating_value >= i %}<span class="rating-star filled">★</span>{% elif p.rating_value >= i - 0.5 %}<span class="rating-star half">★</span>{% else %}<span class="rating-star">★</span>{% endif %}{% endfor %}</div>
+                    <span class="rating-count">({{ p.rating_count }})</span>
+                </div>
+                {% endif %}
             </div>
         </a>
         {% endfor %}

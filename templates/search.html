@@ -1,5 +1,14 @@
 {% extends "base.html" %}
-{% block title %}{% if query %}Search: {{ query }}{% else %}All Pieces – Zimona{% endif %}{% endblock %}
+{% block title %}{% if query %}Buy {{ query }} Online | 925 Silver Jewellery | Zimona{% elif product_type_filter %}{{ product_type_filter[0] }} | 925 Sterling Silver | Zimona{% else %}Shop All Silver Jewellery Online | Zimona{% endif %}{% endblock %}
+{% block meta_description %}{% if query %}Shop {{ query }} in 925 sterling silver at Zimona. Genuine, cadmium-free silver jewellery. Free shipping above Rs.1999.{% elif product_type_filter %}Buy {{ product_type_filter[0] }} online in 925 sterling silver. Handcrafted jewellery at Zimona. Free shipping above Rs.1999.{% else %}Shop all 925 sterling silver jewellery online at Zimona. Rings, necklaces, earrings, bracelets, anklets and more. Free shipping above Rs.1999.{% endif %}{% endblock %}
+{% block meta_robots %}{% if colors_filter or buying_for_filter or (product_type_filter|length > 1) or in_stock_only or min_price is not none or max_price is not none or (page is defined and page > 1) %}noindex, follow{% else %}index, follow{% endif %}{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/search{% if query %}?q={{ query }}{% elif product_type_filter %}?product_type={{ product_type_filter[0] }}{% endif %}">{% endblock %}
+{% block extra_pagination_links %}
+{% set _base_url = request.url_root.rstrip('/') + '/search' %}
+{% set _qs = ('?q=' + query) if query else (('?product_type=' + product_type_filter[0]) if product_type_filter else '?') %}
+{% if page > 1 %}<link rel="prev" href="{{ _base_url }}{{ _qs }}{% if _qs == '?' %}page={{ page - 1 }}{% else %}&page={{ page - 1 }}{% endif %}">{% endif %}
+{% if page < total_pages %}<link rel="next" href="{{ _base_url }}{{ _qs }}{% if _qs == '?' %}page={{ page + 1 }}{% else %}&page={{ page + 1 }}{% endif %}">{% endif %}
+{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -259,7 +268,7 @@
     /* Price range */
     .price-slider-wrap { margin: 6px 0 10px; }
     input[type=range].price-slider {
-        -webkit-appearance: none; width: 100%; height: 3px;
+        -webkit-appearance: none; appearance: none; width: 100%; height: 3px;
         background: var(--border); border-radius: 2px; outline: none; cursor: pointer;
         transition: background 0.2s;
     }
@@ -471,6 +480,15 @@
     }
     .product-card:hover .product-name { color: var(--maroon); }
     .product-price { font-size: 14px; font-weight: 400; color: var(--maroon); }
+
+    /* Product rating stars */
+    .product-rating { display: flex; align-items: center; gap: 5px; margin: 4px 0 6px; }
+    .rating-stars { display: flex; gap: 2px; }
+    .rating-star { font-size: 11px; color: var(--border); line-height: 1; }
+    .rating-star.filled { color: #C8922A; }
+    .rating-star.half { position: relative; color: var(--border); }
+    .rating-star.half::before { content: '★'; position: absolute; left: 0; color: #C8922A; width: 50%; overflow: hidden; }
+    .rating-count { font-size: 11px; color: var(--muted); }
 
     /* Add-to-cart button on cards */
     .card-atc-btn {
@@ -771,9 +789,9 @@
                 <a href="/product/{{ p.slug }}" class="product-card">
                     <div class="product-img">
                         {% if p.images %}
-                            <img class="img-primary" src="/uploads/{{ p.images[0] }}" alt="{{ p.name }}" loading="lazy">
+                            <img class="img-primary" src="/uploads/{{ p.images[0] }}" alt="{{ p.name }}{% if p.category %} – {{ p.category.name }}{% endif %} | 925 Silver | Zimona" loading="lazy">
                             {% if p.images|length > 1 %}
-                                <img class="img-secondary" src="/uploads/{{ p.images[1] }}" alt="{{ p.name }}" loading="lazy">
+                                <img class="img-secondary" src="/uploads/{{ p.images[1] }}" alt="{{ p.name }}{% if p.category %} – {{ p.category.name }}{% endif %} | 925 Silver | Zimona" loading="lazy">
                             {% else %}
                                 <div class="img-overlay">
                                     <div class="img-overlay-rule"></div>
@@ -805,6 +823,12 @@
                     <div class="product-info">
                         <h3 class="product-name">{{ p.name }}</h3>
                         <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
+                        {% if p.rating_value and p.rating_count %}
+                        <div class="product-rating">
+                            <div class="rating-stars">{% for i in range(1,6) %}{% if p.rating_value >= i %}<span class="rating-star filled">★</span>{% elif p.rating_value >= i - 0.5 %}<span class="rating-star half">★</span>{% else %}<span class="rating-star">★</span>{% endif %}{% endfor %}</div>
+                            <span class="rating-count">({{ p.rating_count }})</span>
+                        </div>
+                        {% endif %}
                         <button onclick="event.preventDefault();addToCart('{{ p.id }}','{{ p.name|replace("'","\\'") }}','{{ p.price }}','{{ ("/uploads/" + p.images[0]) if p.images else "" }}')" class="card-atc-btn">Add to Cart</button>
                     </div>
                 </a>
@@ -932,10 +956,16 @@ function toggleStock() {
 }
 
 // ── Price range slider sync ──
+function updateSliderFill(slider) {
+    const pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100;
+    slider.style.background = `linear-gradient(to right, var(--maroon) 0%, var(--maroon) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
+}
 const rangeEl = document.getElementById('priceRangeMax');
 const maxEl = document.getElementById('priceMaxInput');
 if (rangeEl && maxEl) {
-    maxEl.addEventListener('input', () => { rangeEl.value = maxEl.value || rangeEl.max; });
+    updateSliderFill(rangeEl);
+    rangeEl.addEventListener('input', () => { maxEl.value = rangeEl.value; updateSliderFill(rangeEl); });
+    maxEl.addEventListener('input', () => { rangeEl.value = maxEl.value || rangeEl.max; updateSliderFill(rangeEl); });
 }
 
 // ── Sort dropdown — opacity/transform transition ──

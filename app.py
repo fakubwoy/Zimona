@@ -51,18 +51,27 @@ def allowed_file(filename):
 def compress_image(filepath, max_size=(1200, 1200), quality=85):
     with Image.open(filepath) as img:
         img.thumbnail(max_size)
-        img.save(filepath, optimize=True, quality=quality)
+        # Convert to WebP for better compression and Core Web Vitals
+        webp_path = os.path.splitext(filepath)[0] + '.webp'
+        img.save(webp_path, 'WEBP', optimize=True, quality=quality)
+    # Remove original non-webp file if we created a webp version
+    if filepath != webp_path and os.path.exists(webp_path):
+        os.remove(filepath)
+    return webp_path
 
-def save_images(files):
+def save_images(files, name_slug='product'):
     filenames = []
     for f in files:
         if f and allowed_file(f.filename):
             ext = f.filename.rsplit('.', 1)[1].lower()
-            filename = f"{secrets.token_hex(8)}.{ext}"
+            # Include slug in filename so Google Image Search gets keyword signals
+            # e.g. "solitaire-diamond-ring-a3f8b2c1.webp" instead of "a3f8b2c1.webp"
+            filename = f"{name_slug[:40]}-{secrets.token_hex(6)}.{ext}"
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             f.save(filepath)
-            compress_image(filepath)
-            filenames.append(filename)
+            webp_path = compress_image(filepath)
+            # Store the final filename (always .webp)
+            filenames.append(os.path.basename(webp_path))
     return filenames
 
 # ---------- Models ----------
@@ -72,6 +81,7 @@ class Category(db.Model):
     slug = db.Column(db.String(120), unique=True, nullable=False)
     spec_schema = db.Column(db.JSON, default=list)
     image = db.Column(db.String(200), nullable=True)
+    description = db.Column(db.Text, nullable=True)
     parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
     subcategories = db.relationship('Category', backref=db.backref('parent', remote_side='Category.id'), lazy='dynamic')
 
@@ -147,6 +157,8 @@ class Product(db.Model):
     buying_for = db.Column(db.String(200), nullable=True)  # e.g. "Womens,Kids"
     is_in_stock = db.Column(db.Boolean, default=True, nullable=False)
     sort_order = db.Column(db.Integer, default=0, nullable=False)
+    rating_value = db.Column(db.Numeric(3, 2), nullable=True)   # e.g. 4.50
+    rating_count = db.Column(db.Integer, default=0)              # number of reviews
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -159,7 +171,9 @@ class Product(db.Model):
             'meta_title': self.meta_title, 'meta_description': self.meta_description,
             'meta_keywords': self.meta_keywords, 'tags': self.tags, 'synonyms': self.synonyms,
             'color': self.color, 'buying_for': self.buying_for,
-            'is_in_stock': self.is_in_stock, 'sort_order': self.sort_order
+            'is_in_stock': self.is_in_stock, 'sort_order': self.sort_order,
+            'rating_value': float(self.rating_value) if self.rating_value else None,
+            'rating_count': self.rating_count
         }
 
 # ---------- Seed Sample Products ----------
@@ -449,6 +463,213 @@ def search():
                            cat_tree=cat_tree,
                            global_max_price=global_max_price)
 
+@app.route('/robots.txt')
+def robots_txt():
+    base = request.url_root.rstrip('/')
+    content = f"""User-agent: *
+Allow: /
+Allow: /uploads/
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /search?*color=
+Disallow: /search?*buying_for=
+Disallow: /search?*in_stock=
+Disallow: /search?*min_price=
+Disallow: /search?*max_price=
+Disallow: /search?*sort=
+
+Sitemap: {base}/sitemap.xml
+"""
+    return app.response_class(content, mimetype='text/plain')
+
+@app.route('/sitemap.xml')
+def sitemap_xml():
+    from datetime import timezone
+    base = request.url_root.rstrip('/')
+    now = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+
+    urls = []
+    # Homepage
+    urls.append({'loc': f'{base}/', 'priority': '1.0', 'changefreq': 'daily', 'lastmod': now})
+    # Search / shop-all
+    urls.append({'loc': f'{base}/search', 'priority': '0.9', 'changefreq': 'daily', 'lastmod': now})
+
+    # Category pages (proper landing pages, not search params)
+    categories = Category.query.filter_by(parent_id=None).all()
+    for cat in categories:
+        urls.append({
+            'loc': f'{base}/category/{cat.slug}',
+            'priority': '0.8', 'changefreq': 'weekly', 'lastmod': now
+        })
+        for sub in cat.subcategories.all():
+            urls.append({
+                'loc': f'{base}/category/{sub.slug}',
+                'priority': '0.7', 'changefreq': 'weekly', 'lastmod': now
+            })
+
+    # Product pages — include image tags for Google Image Search
+    products = Product.query.all()
+    for p in products:
+        lastmod = p.updated.strftime('%Y-%m-%d') if p.updated else now
+        urls.append({
+            'loc': f'{base}/product/{p.slug}',
+            'priority': '0.7', 'changefreq': 'monthly', 'lastmod': lastmod,
+            'images': [
+                {
+                    'loc': f'{base}/uploads/{img}',
+                    'title': f'{p.name} | Zimona',
+                    'caption': (p.meta_description or p.description or p.name or '')[:200]
+                }
+                for img in (p.images or [])[:5]
+            ]
+        })
+
+    def _xml_esc(s):
+        return (s or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+
+    xml_parts = ['<?xml version="1.0" encoding="UTF-8"?>',
+                 '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+                 ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">']
+    for u in urls:
+        parts = ['  <url>']
+        parts.append(f'    <loc>{u["loc"]}</loc>')
+        parts.append(f'    <lastmod>{u["lastmod"]}</lastmod>')
+        parts.append(f'    <changefreq>{u["changefreq"]}</changefreq>')
+        parts.append(f'    <priority>{u["priority"]}</priority>')
+        for img in u.get('images', []):
+            parts.append('    <image:image>')
+            parts.append(f'      <image:loc>{img["loc"]}</image:loc>')
+            parts.append(f'      <image:title>{_xml_esc(img["title"])}</image:title>')
+            parts.append(f'      <image:caption>{_xml_esc(img["caption"])}</image:caption>')
+            parts.append('    </image:image>')
+        parts.append('  </url>')
+        xml_parts.extend(parts)
+    xml_parts.append('</urlset>')
+    return app.response_class('\n'.join(xml_parts), mimetype='application/xml')
+
+@app.route('/category/<slug>')
+def category_page(slug):
+    cat = Category.query.filter_by(slug=slug).first_or_404()
+    subcats = cat.subcategories.all()
+    parent = cat.parent if cat.parent_id else None
+
+    # Collect all category IDs in scope (this cat + its subcats)
+    cat_ids = {cat.id} | {s.id for s in subcats}
+
+    # Base product set for this category
+    all_cat_products = Product.query.filter(Product.category_id.in_(cat_ids)).all()
+
+    # --- Filters ---
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    in_stock_only = request.args.get('in_stock') == '1'
+    colors_filter = [c.strip() for c in request.args.getlist('color') if c.strip()]
+    buying_for_filter = [b.strip() for b in request.args.getlist('buying_for') if b.strip()]
+    sort_by = request.args.get('sort', 'featured')
+    active_subcat = request.args.get('subcat', '').strip()  # slug of selected subcategory
+
+    products = list(all_cat_products)
+    # Filter by subcategory if selected
+    if active_subcat:
+        sub_match = next((s for s in subcats if s.slug == active_subcat), None)
+        if sub_match:
+            products = [p for p in products if p.category_id == sub_match.id]
+    if min_price is not None:
+        products = [p for p in products if float(p.price) >= min_price]
+    if max_price is not None:
+        products = [p for p in products if float(p.price) <= max_price]
+    if in_stock_only:
+        products = [p for p in products if p.is_in_stock]
+    if colors_filter:
+        products = [p for p in products if p.color and any(
+            c.lower() in [x.strip().lower() for x in p.color.split(',')] for c in colors_filter)]
+    if buying_for_filter:
+        products = [p for p in products if p.buying_for and any(
+            b.lower() in [x.strip().lower() for x in p.buying_for.split(',')] for b in buying_for_filter)]
+
+    # --- Sort ---
+    if sort_by == 'price_asc':
+        products.sort(key=lambda p: float(p.price))
+    elif sort_by == 'price_desc':
+        products.sort(key=lambda p: float(p.price), reverse=True)
+    elif sort_by == 'name_asc':
+        products.sort(key=lambda p: p.name.lower())
+    elif sort_by == 'name_desc':
+        products.sort(key=lambda p: p.name.lower(), reverse=True)
+    elif sort_by == 'newest':
+        products.sort(key=lambda p: p.created or datetime.min, reverse=True)
+    elif sort_by == 'oldest':
+        products.sort(key=lambda p: p.created or datetime.min)
+    else:
+        products.sort(key=lambda p: (-(p.sort_order or 0), p.name.lower()))
+
+    # --- Facets (computed from unfiltered base set) ---
+    bf_counts = {}
+    col_counts = {}
+    for p in all_cat_products:
+        for b in (p.buying_for or '').split(','):
+            b = b.strip()
+            if b: bf_counts[b] = bf_counts.get(b, 0) + 1
+        for c in (p.color or '').split(','):
+            c = c.strip()
+            if c: col_counts[c] = col_counts.get(c, 0) + 1
+
+    all_prices = [float(p.price) for p in all_cat_products if p.price]
+    global_max_price = int(max(all_prices)) if all_prices else 50000
+
+    has_filters = bool(min_price is not None or max_price is not None or
+                       in_stock_only or colors_filter or buying_for_filter)
+
+    return render_template('category.html', category=cat, products=products,
+                           subcats=subcats, parent=parent,
+                           sort_by=sort_by, has_filters=has_filters,
+                           min_price=min_price, max_price=max_price,
+                           in_stock_only=in_stock_only,
+                           colors_filter=colors_filter,
+                           buying_for_filter=buying_for_filter,
+                           bf_counts=bf_counts, col_counts=col_counts,
+                           global_max_price=global_max_price,
+                           active_subcat=active_subcat,
+                           total_products=len(products))
+
+@app.route('/feed.xml')
+def merchant_feed():
+    """Google Merchant Center / Shopping product feed (RSS2 format)."""
+    base = request.url_root.rstrip('/')
+    products = Product.query.filter_by(is_in_stock=True).all()
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<rss version="2.0" xmlns:g="http://base.google.com/ns/1.0">',
+             '<channel>',
+             f'<title>Zimona Silver Jewellery</title>',
+             f'<link>{base}/</link>',
+             f'<description>925 Sterling Silver Jewellery – Zimona</description>']
+    for p in products:
+        img_url = f'{base}/uploads/{p.images[0]}' if p.images else ''
+        cat_name = p.category.name if p.category else 'Jewellery'
+        desc = (p.description or p.name).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        name = p.name.replace('&', '&amp;')
+        lines.append('<item>')
+        lines.append(f'<g:id>{p.id}</g:id>')
+        lines.append(f'<g:title>{name}</g:title>')
+        lines.append(f'<g:description>{desc}</g:description>')
+        lines.append(f'<g:link>{base}/product/{p.slug}</g:link>')
+        if img_url:
+            lines.append(f'<g:image_link>{img_url}</g:image_link>')
+        lines.append(f'<g:price>{float(p.price):.2f} INR</g:price>')
+        lines.append(f'<g:availability>in stock</g:availability>')
+        lines.append(f'<g:condition>new</g:condition>')
+        lines.append(f'<g:brand>Zimona</g:brand>')
+        lines.append(f'<g:google_product_category>Apparel &amp; Accessories &gt; Jewelry</g:google_product_category>')
+        lines.append(f'<g:product_type>{cat_name}</g:product_type>')
+        material = (p.specs or {}).get('Material', '925 Sterling Silver')
+        lines.append(f'<g:material>{material}</g:material>')
+        if p.color:
+            lines.append(f'<g:color>{p.color.split(",")[0].strip()}</g:color>')
+        lines.append('</item>')
+    lines.extend(['</channel>', '</rss>'])
+    return app.response_class('\n'.join(lines), mimetype='application/xml')
+
 @app.route('/api/search')
 def api_search():
     q = request.args.get('q', '').strip()
@@ -545,6 +766,10 @@ def admin_product_form(id=None):
         buying_for = request.form.get('buying_for', '')
         is_in_stock = request.form.get('is_in_stock') == '1'
         sort_order = int(request.form.get('sort_order', 0) or 0)
+        rating_value_raw = request.form.get('rating_value', '').strip()
+        rating_count_raw = request.form.get('rating_count', '').strip()
+        rating_value = float(rating_value_raw) if rating_value_raw else None
+        rating_count = int(rating_count_raw) if rating_count_raw else 0
 
         if not product:
             product = Product()
@@ -564,10 +789,12 @@ def admin_product_form(id=None):
         product.buying_for = buying_for[:200] if buying_for else None
         product.is_in_stock = is_in_stock
         product.sort_order = sort_order
+        product.rating_value = rating_value
+        product.rating_count = rating_count
 
         # Fix: Always explicitly update images array with exactly what the form sent. 
         # This resolves an issue where deleting all images wouldn't reflect on the server.
-        new_images = save_images(request.files.getlist('images')) if 'images' in request.files else []
+        new_images = save_images(request.files.getlist('images'), name_slug=slugify(name)) if 'images' in request.files else []
         kept_images = request.form.getlist('images_keep')
         product.images = kept_images + new_images
 
@@ -688,8 +915,9 @@ def admin_category_edit(id):
     else:
         cat.name = new_name
         cat.slug = slugify(new_name)
+        cat.description = request.form.get('description', '').strip() or None
         db.session.commit()
-        flash('Category renamed.', 'success')
+        flash('Category saved.', 'success')
     return redirect(url_for('admin_categories'))
 
 @app.route('/admin/category/<int:id>/upload-image', methods=['POST'])
@@ -909,6 +1137,19 @@ with app.app_context():
             conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS buying_for VARCHAR(200)"))
             conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS is_in_stock BOOLEAN NOT NULL DEFAULT TRUE"))
             conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE category ADD COLUMN IF NOT EXISTS description TEXT"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_value NUMERIC(3,2) DEFAULT NULL"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_count INTEGER DEFAULT 0"))
             conn.commit()
         except Exception:
             conn.rollback()

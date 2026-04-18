@@ -1,5 +1,103 @@
 {% extends "base.html" %}
-{% block title %}{{ product.name }} – Zimona{% endblock %}
+{% block title %}Buy {{ product.name }} Online | 925 Sterling Silver | Zimona{% endblock %}
+{% block meta_description %}{{ product.meta_description or ('Buy ' + product.name + ' online. 925 sterling silver, genuine and cadmium-free. ' + (product.description[:120] if product.description else '') + ' Shop at Zimona.') }}{% endblock %}
+{% block meta_keywords %}{{ product.meta_keywords or (product.name + ', 925 silver, sterling silver jewellery, buy silver online India') }}{% endblock %}
+{% block canonical %}<link rel="canonical" href="{{ request.url_root.rstrip('/') }}/product/{{ product.slug }}">{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_title %}{{ product.name }} | Zimona Fine Silver Jewellery{% endblock %}
+{% block og_description %}{{ product.meta_description or ('Buy ' + product.name + ' – 925 sterling silver, ships free above Rs.1999.') }}{% endblock %}
+{% if product.images %}
+{% block og_image %}<meta property="og:image" content="{{ request.url_root }}uploads/{{ product.images[0] }}">{% endblock %}
+{% block twitter_image %}<meta name="twitter:image" content="{{ request.url_root }}uploads/{{ product.images[0] }}">{% endblock %}
+{% endif %}
+{% block twitter_title %}{{ product.name }} | Zimona{% endblock %}
+{% block twitter_description %}{{ product.meta_description or ('Buy ' + product.name + ' – 925 sterling silver.') }}{% endblock %}
+<meta property="product:price:amount" content="{{ product.price }}">
+<meta property="product:price:currency" content="INR">
+<meta property="product:availability" content="{% if product.is_in_stock %}in stock{% else %}out of stock{% endif %}">
+<meta property="product:brand" content="Zimona">
+<meta property="product:condition" content="new">
+
+{% block jsonld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "{{ product.name }}",
+  "description": "{{ (product.description or '')|replace('"', '\\"')|replace('\n', ' ') }}",
+  "sku": "{{ product.id }}",
+  "brand": { "@type": "Brand", "name": "Zimona" },
+  "material": "{{ (product.specs.get('Material', '925 Sterling Silver') if product.specs else '925 Sterling Silver') }}",
+  {% if product.images %}
+  "image": [{% for img in product.images %}"{{ request.url_root }}uploads/{{ img }}"{% if not loop.last %},{% endif %}{% endfor %}],
+  {% endif %}
+  "offers": {
+    "@type": "Offer",
+    "url": "{{ request.url_root.rstrip('/') }}/product/{{ product.slug }}",
+    "priceCurrency": "INR",
+    "price": "{{ product.price }}",
+    "priceValidUntil": "{{ (now.year + 1)|string }}-12-31",
+    "availability": "{% if product.is_in_stock %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}",
+    "seller": { "@type": "Organization", "name": "Zimona" }
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "{{ request.url_root }}" },
+    {% if product.category %}
+    { "@type": "ListItem", "position": 2, "name": "{{ product.category.name }}", "item": "{{ request.url_root.rstrip('/') }}/search?product_type={{ product.category.name|urlencode }}" },
+    { "@type": "ListItem", "position": 3, "name": "{{ product.name }}", "item": "{{ request.url_root.rstrip('/') }}/product/{{ product.slug }}" }
+    {% else %}
+    { "@type": "ListItem", "position": 2, "name": "{{ product.name }}", "item": "{{ request.url_root.rstrip('/') }}/product/{{ product.slug }}" }
+    {% endif %}
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is {{ product.name }} made of genuine 925 sterling silver?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. All Zimona jewellery is crafted from 925 sterling silver (92.5% pure silver). Each piece is hallmarked and cadmium-free, ensuring it is safe for everyday wear."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How do I care for my {{ product.name }}?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Store your silver jewellery in an airtight pouch or box when not in use. Avoid contact with perfume, lotion, and water. Clean gently with a soft silver polishing cloth to restore shine."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is the price of {{ product.name }}?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The {{ product.name }} is priced at ₹{{ '{:,.0f}'.format(product.price) }}. Prices are inclusive of all taxes. Free shipping is available on orders above ₹1999."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How long does delivery take for {{ product.name }}?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Orders are typically dispatched within 1–2 business days. Standard delivery across India takes 4–7 business days. Expedited shipping options are available at checkout."
+      }
+    }
+  ]
+}
+</script>
+{% endblock %}
 
 {% block extra_head %}
 <style>
@@ -105,7 +203,18 @@
     .prod-tag { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); padding: 6px 12px; background: transparent; }
     .prod-tag:first-child { color: var(--maroon); border-color: rgba(107,26,26,0.2); background: rgba(107,26,26,0.04); font-weight: 500; }
     
-    .prod-price { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 600; color: var(--maroon); margin-bottom: 40px; }
+    .prod-price { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 600; color: var(--maroon); margin-bottom: 16px; }
+
+    /* Rating */
+    .prod-rating { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; }
+    .prod-rating-stars { display: flex; gap: 3px; }
+    .prod-rating-star { font-size: 16px; color: var(--border); line-height: 1; }
+    .prod-rating-star.filled { color: #C8922A; }
+    .prod-rating-star.half { position: relative; color: var(--border); }
+    .prod-rating-star.half::before { content: '★'; position: absolute; left: 0; color: #C8922A; width: 50%; overflow: hidden; }
+    .prod-rating-value { font-size: 14px; font-weight: 600; color: var(--charcoal); }
+    .prod-rating-count { font-size: 13px; color: var(--muted); }
+
     .prod-desc { font-size: 14px; line-height: 1.8; color: var(--charcoal); margin-bottom: 40px; }
 
     /* Details Table */
@@ -153,7 +262,7 @@
     <div class="product-left">
         <div class="breadcrumbs">
             <a href="/">Home</a> /
-            {% if product.category %}<a href="/search?q={{ product.category.name }}">{{ product.category.name }}</a> / {% endif %}
+            {% if product.category %}<a href="/category/{{ product.category.slug if product.category.slug else (product.category.parent.slug + '/' + product.category.slug) if product.category.parent else product.category.slug }}">{{ product.category.name }}</a> / {% endif %}
             <span style="color:var(--charcoal);">{{ product.name|lower }}</span>
         </div>
 
@@ -174,7 +283,7 @@
                     {% if product.images %}
                         {% for img in product.images %}
                         <div class="carousel-slide">
-                            <img src="/uploads/{{ img }}" alt="{{ product.name }}">
+                            <img src="/uploads/{{ img }}" alt="{{ product.name }}{% if loop.index == 1 %} – front view{% elif loop.index == 2 %} – side profile{% elif loop.index == 3 %} – detail close-up{% else %} – view {{ loop.index }}{% endif %}{% if product.category %}, {{ product.category.name }}{% endif %} | 925 Sterling Silver | Zimona">
                         </div>
                         {% endfor %}
                     {% else %}
@@ -204,7 +313,7 @@
         <div class="prod-category">{{ product.category.name }}</div>
         {% endif %}
         
-        <h1 class="prod-title">{{ product.name|lower }}</h1>
+        <h1 class="prod-title" style="text-transform:lowercase;">{{ product.name }}</h1>
 
         <div class="prod-tags">
             {% if product.tags %}
@@ -217,6 +326,14 @@
         </div>
 
         <div class="prod-price">₹{{ "{:,.0f}".format(product.price) }}</div>
+
+        {% if product.rating_value and product.rating_count %}
+        <div class="prod-rating">
+            <div class="prod-rating-stars">{% for i in range(1,6) %}{% if product.rating_value >= i %}<span class="prod-rating-star filled">★</span>{% elif product.rating_value >= i - 0.5 %}<span class="prod-rating-star half">★</span>{% else %}<span class="prod-rating-star">★</span>{% endif %}{% endfor %}</div>
+            <span class="prod-rating-value">{{ "%.1f"|format(product.rating_value|float) }}</span>
+            <span class="prod-rating-count">({{ product.rating_count }} review{{ 's' if product.rating_count != 1 else '' }})</span>
+        </div>
+        {% endif %}
 
         {% if product.description %}
         <div class="prod-desc">
@@ -251,8 +368,6 @@
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
             <span id="wishlistBtnLabel">Save to Wishlist</span>
         </button>
-        <a href="mailto:contact@zimona.com?subject=Enquiry about {{ product.name }}" class="btn-enquire" style="background:transparent;color:var(--muted);border:2px solid var(--border);margin-top:0;">Enquire About This Piece</a>
-        
         <div class="trust-badges">
             <span>✓ Free consultation</span>
             <span>✓ Secure packaging</span>

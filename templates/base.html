@@ -4,8 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Zimona – Fine Silver Jewellery{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Shop handcrafted 925 sterling silver jewellery online. Rings, necklaces, earrings, bracelets and anklets. 100% genuine, cadmium-free silver. Free shipping above ₹1999.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}925 sterling silver jewellery, silver rings online India, silver necklaces, silver earrings, silver bracelets, silver anklets, fine silver jewellery{% endblock %}">
+    <meta name="robots" content="{% block meta_robots %}index, follow{% endblock %}">
+    {% block canonical %}<link rel="canonical" href="{{ request.url_root.rstrip('/') }}{{ request.path }}">{% endblock %}
+    {% block extra_pagination_links %}{% endblock %}
+    <!-- Open Graph -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}Zimona – Fine Silver Jewellery{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Shop handcrafted 925 sterling silver jewellery. Free shipping above Rs.1999.{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:site_name" content="Zimona">
+    {% block og_image %}<meta property="og:image" content="{{ request.url_root }}static/og-default.jpg">{% endblock %}
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}Zimona – Fine Silver Jewellery{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Shop handcrafted 925 sterling silver jewellery. Free shipping above Rs.1999.{% endblock %}">
+    {% block twitter_image %}<meta name="twitter:image" content="{{ request.url_root }}static/og-default.jpg">{% endblock %}
+    {% block jsonld %}
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Zimona",
+      "url": "{{ request.url_root }}",
+      "logo": "{{ request.url_root }}static/logo.png",
+      "sameAs": [
+        "https://www.instagram.com/zimona.in",
+        "https://www.facebook.com/zimona.in"
+      ],
+      "contactPoint": { "@type": "ContactPoint", "contactType": "customer service", "email": "contact@zimona.com" }
+    }
+    </script>
+    {% endblock %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"></noscript>
     <style>
         :root {
             --cream: #FAF6F0;
@@ -392,11 +427,11 @@
             <div class="nav-links">
                 <a href="/">Home</a>
                 <a href="/search">Shop All</a>
-                <a href="/search?q=Rings">Rings</a>
-                <a href="/search?q=Necklaces">Necklaces</a>
-                <a href="/search?q=Earrings">Earrings</a>
-                <a href="/search?q=Bracelets">Bracelets</a>
-                <a href="/search?q=Anklets">Anklets</a>
+                <a href="/category/rings">Rings</a>
+                <a href="/category/necklaces">Necklaces</a>
+                <a href="/category/earrings">Earrings</a>
+                <a href="/category/bracelets">Bracelets</a>
+                <a href="/category/anklets">Anklets</a>
             </div>
             <div class="nav-right">
                 <div class="nav-search">
@@ -454,11 +489,11 @@
                 </div>
                 <div class="footer-col">
                     <div class="footer-col-title">Collections</div>
-                    <a href="/search?q=Rings">Rings</a>
-                    <a href="/search?q=Necklaces">Necklaces</a>
-                    <a href="/search?q=Earrings">Earrings</a>
-                    <a href="/search?q=Bracelets">Bracelets</a>
-                    <a href="/search?q=Anklets">Anklets</a>
+                    <a href="/category/rings">Rings</a>
+                    <a href="/category/necklaces">Necklaces</a>
+                    <a href="/category/earrings">Earrings</a>
+                    <a href="/category/bracelets">Bracelets</a>
+                    <a href="/category/anklets">Anklets</a>
                 </div>
                 <div class="footer-col">
                     <div class="footer-col-title">Help</div>
@@ -670,8 +705,8 @@
                 svg.setAttribute('stroke', 'var(--maroon)');
                 btn.setAttribute('title', 'Remove from Wishlist');
             } else {
-                svg.setAttribute('fill', '#fff');
-                svg.setAttribute('stroke', '#fff');
+                svg.setAttribute('fill', 'none');
+                svg.setAttribute('stroke', 'currentColor');
                 btn.setAttribute('title', 'Add to Wishlist');
             }
         }
@@ -770,25 +805,24 @@
             top: 10px;
             right: 10px;
             z-index: 3;
-            background: none;
-            border: none;
-            padding: 4px;
+            background: rgba(255,255,255,0.92);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 34px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            color: #fff;
-            filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35));
-            transition: color 0.2s, transform 0.2s, filter 0.2s;
+            color: var(--charcoal);
+            transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+            backdrop-filter: blur(4px);
         }
         .wishlist-heart:hover {
+            background: #fff;
+            border-color: var(--maroon);
             color: var(--maroon);
-            transform: scale(1.2);
-            filter: drop-shadow(0 2px 6px rgba(107,26,26,0.4));
-        }
-        .wishlist-heart.active {
-            color: var(--maroon);
-            filter: drop-shadow(0 1px 4px rgba(107,26,26,0.5));
+            transform: scale(1.1);
         }
         @keyframes heartPop {
             0%   { transform: scale(1); }
