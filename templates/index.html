@@ -394,6 +394,16 @@
     .product-card:hover .product-name { color: var(--maroon); }
     .product-price { font-size: 15px; font-weight: 500; color: var(--maroon); }
     .product-price-old { font-size: 12px; color: var(--muted); text-decoration: line-through; margin-left: 6px; }
+    .card-atc-btn {
+        margin-top: 12px; width: 100%;
+        background: transparent; color: var(--charcoal);
+        border: 1px solid var(--border);
+        padding: 9px; font-family: 'DM Sans', sans-serif;
+        font-size: 10px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase;
+        cursor: pointer;
+        transition: background 0.25s, color 0.25s, border-color 0.25s;
+    }
+    .card-atc-btn:hover { background: var(--maroon); color: #fff; border-color: var(--maroon); }
     /* Budget Cards — Maroon Festive Style */
 .budget-card-maroon {
     display: block;
@@ -720,10 +730,18 @@
                     </div>
                 {% endif %}
                 <span class="product-badge">{{ (p.tags or '925 Silver').split(',')[0].strip() }}</span>
+                <button
+                    class="wishlist-heart"
+                    data-id="{{ p.id }}"
+                    onclick="event.preventDefault(); toggleWishlist('{{ p.id }}', '{{ p.name|replace("'", "\\'") }}', '{{ p.price }}', '{{ ("/uploads/" + p.images[0]) if p.images else "" }}', this)"
+                    title="Add to Wishlist">
+                    <svg width="17" height="17" fill="#fff" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                </button>
             </div>
             <div class="product-info">
                 <h3 class="product-name">{{ p.name }}</h3>
                 <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
+                <button onclick="event.preventDefault();addToCart('{{ p.id }}','{{ p.name|replace("'","\\'") }}','{{ p.price }}','{{ ("/uploads/" + p.images[0]) if p.images else "" }}')" class="card-atc-btn">Add to Cart</button>
             </div>
         </a>
         {% endfor %}
@@ -804,10 +822,18 @@
                     </div>
                 {% endif %}
                 <span class="product-badge">New</span>
+                <button
+                    class="wishlist-heart"
+                    data-id="{{ p.id }}"
+                    onclick="event.preventDefault(); toggleWishlist('{{ p.id }}', '{{ p.name|replace("'", "\\'") }}', '{{ p.price }}', '{{ ("/uploads/" + p.images[0]) if p.images else "" }}', this)"
+                    title="Add to Wishlist">
+                    <svg width="17" height="17" fill="#fff" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                </button>
             </div>
             <div class="product-info">
                 <h3 class="product-name">{{ p.name }}</h3>
                 <p class="product-price">₹{{ "{:,.0f}".format(p.price) }}</p>
+                <button onclick="event.preventDefault();addToCart('{{ p.id }}','{{ p.name|replace("'","\\'") }}','{{ p.price }}','{{ ("/uploads/" + p.images[0]) if p.images else "" }}')" class="card-atc-btn">Add to Cart</button>
             </div>
         </a>
         {% endfor %}

@@ -72,6 +72,8 @@ class Category(db.Model):
     slug = db.Column(db.String(120), unique=True, nullable=False)
     spec_schema = db.Column(db.JSON, default=list)
     image = db.Column(db.String(200), nullable=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('category.id'), nullable=True)
+    subcategories = db.relationship('Category', backref=db.backref('parent', remote_side='Category.id'), lazy='dynamic')
 
     @staticmethod
     def seed_defaults():
@@ -86,6 +88,25 @@ class Category(db.Model):
         for name, schema in defaults:
             if not Category.query.filter_by(name=name).first():
                 db.session.add(Category(name=name, slug=slugify(name), spec_schema=schema))
+        db.session.commit()
+
+    @staticmethod
+    def seed_gifts():
+        if Category.query.filter_by(slug='gifts').first():
+            return
+        gifts = Category(name='Gifts', slug='gifts', spec_schema=[])
+        db.session.add(gifts)
+        db.session.flush()  # get gifts.id before commit
+        subcats = [
+            'Silver Coins',
+            'Silver Idols',
+            'Puja Items',
+            'Silver Utensils',
+            'Nazar & Protection Jewellery',
+        ]
+        for subname in subcats:
+            if not Category.query.filter_by(slug=slugify(subname)).first():
+                db.session.add(Category(name=subname, slug=slugify(subname), spec_schema=[], parent_id=gifts.id))
         db.session.commit()
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)          # ← new auto‑increment primary key
@@ -122,6 +143,10 @@ class Product(db.Model):
     meta_keywords = db.Column(db.String(200))
     tags = db.Column(db.String(500))
     synonyms = db.Column(db.String(500))
+    color = db.Column(db.String(200), nullable=True)       # comma-separated color names
+    buying_for = db.Column(db.String(200), nullable=True)  # e.g. "Womens,Kids"
+    is_in_stock = db.Column(db.Boolean, default=True, nullable=False)
+    sort_order = db.Column(db.Integer, default=0, nullable=False)
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -132,7 +157,9 @@ class Product(db.Model):
             'category': self.category.name if self.category else None,
             'specs': self.specs, 'images': self.images,
             'meta_title': self.meta_title, 'meta_description': self.meta_description,
-            'meta_keywords': self.meta_keywords, 'tags': self.tags, 'synonyms': self.synonyms
+            'meta_keywords': self.meta_keywords, 'tags': self.tags, 'synonyms': self.synonyms,
+            'color': self.color, 'buying_for': self.buying_for,
+            'is_in_stock': self.is_in_stock, 'sort_order': self.sort_order
         }
 
 # ---------- Seed Sample Products ----------
@@ -189,7 +216,7 @@ def seed_sample_products():
 # ---------- Routes ----------
 @app.route('/')
 def index():
-    categories = Category.query.all()
+    categories = Category.query.filter_by(parent_id=None).all()
 
     # Top Sellers: use curated IDs if set, else fall back to recent 8
     top_seller_ids = Settings.get('top_seller_ids', [])
@@ -218,10 +245,10 @@ def index():
         {'icon': '◈', 'title': 'Always Cadmium Free'},
     ])
     budget_ranges = Settings.get('budget_ranges', [
-        {'label': 'Gifts Under ₹1499', 'url': '/search?min_price=0&max_price=1499'},
-        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?min_price=1499&max_price=2499'},
-        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?min_price=2499&max_price=4999'},
-        {'label': 'Gifts Above ₹4999', 'url': '/search?min_price=4999'},
+        {'label': 'Gifts Under ₹1499', 'url': '/search?product_type=Gifts&min_price=0&max_price=1499'},
+        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?product_type=Gifts&min_price=1499&max_price=2499'},
+        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?product_type=Gifts&min_price=2499&max_price=4999'},
+        {'label': 'Gifts Above ₹4999', 'url': '/search?product_type=Gifts&min_price=4999'},
     ])
     return render_template('index.html', categories=categories, products=featured,
                            new_arrivals=new_arrivals,
@@ -237,17 +264,28 @@ def search():
     q = request.args.get('q', '').strip()
     min_price = request.args.get('min_price', type=float)
     max_price = request.args.get('max_price', type=float)
+    in_stock_only = request.args.get('in_stock') == '1'
+    colors_filter = [c.strip() for c in request.args.getlist('color') if c.strip()]
+    buying_for_filter = [b.strip() for b in request.args.getlist('buying_for') if b.strip()]
+    product_type_filter = [pt.strip() for pt in request.args.getlist('product_type') if pt.strip()]
+    sort_by = request.args.get('sort', 'featured')  # featured|price_asc|price_desc|name_asc|name_desc|newest|oldest
 
     products = []
-    if q or min_price is not None or max_price is not None:
-        # Start with a base query
-        query = Product.query.join(Category, isouter=True)
+    page = max(1, request.args.get('page', 1, type=int))
+    per_page = 24
+    has_filters = bool(q or min_price is not None or max_price is not None
+                       or in_stock_only or colors_filter or buying_for_filter or product_type_filter)
+    # Always load products — show all when no filters/query
+    if True:
+        from sqlalchemy.orm import aliased
+        ParentCategory = aliased(Category)
+        query = Product.query.join(Category, isouter=True).join(
+            ParentCategory, Category.parent_id == ParentCategory.id, isouter=True
+        )
 
-        # Apply text search if query provided
         if q:
             import re as _re
             pattern = _re.compile(r'(?<![a-zA-Z])' + _re.escape(q) + r'(?![a-zA-Z])', _re.IGNORECASE)
-
             candidates = query.filter(
                 or_(
                     Product.name.ilike(f'%{q}%'),
@@ -256,9 +294,9 @@ def search():
                     Product.synonyms.ilike(f'%{q}%'),
                     Product.meta_keywords.ilike(f'%{q}%'),
                     Category.name.ilike(f'%{q}%'),
+                    ParentCategory.name.ilike(f'%{q}%'),
                 )
             ).all()
-
             products = [
                 p for p in candidates
                 if pattern.search(p.name or '')
@@ -267,18 +305,149 @@ def search():
                 or pattern.search(p.synonyms or '')
                 or pattern.search(p.meta_keywords or '')
                 or (p.category and pattern.search(p.category.name or ''))
+                or (p.category and p.category.parent and pattern.search(p.category.parent.name or ''))
             ]
         else:
             products = query.all()
 
-        # Apply price filters
+        # Price filter
         if min_price is not None:
             products = [p for p in products if float(p.price) >= min_price]
         if max_price is not None:
             products = [p for p in products if float(p.price) <= max_price]
+        # Stock filter
+        if in_stock_only:
+            products = [p for p in products if p.is_in_stock]
+        # Color filter (any match in comma-separated color field)
+        if colors_filter:
+            def has_color(p):
+                if not p.color:
+                    return False
+                pcols = [c.strip().lower() for c in p.color.split(',')]
+                return any(fc.lower() in pcols for fc in colors_filter)
+            products = [p for p in products if has_color(p)]
+        # Buying For filter
+        if buying_for_filter:
+            def has_buying_for(p):
+                if not p.buying_for:
+                    return False
+                pbf = [b.strip().lower() for b in p.buying_for.split(',')]
+                return any(f.lower() in pbf for f in buying_for_filter)
+            products = [p for p in products if has_buying_for(p)]
+        # Product type filter — matches direct category OR subcategories of matched parent
+        if product_type_filter:
+            matched_cat_ids = set()
+            for pt in product_type_filter:
+                cat = Category.query.filter(func.lower(Category.name) == pt.lower()).first()
+                if cat:
+                    matched_cat_ids.add(cat.id)
+                    for sub in cat.subcategories.all():
+                        matched_cat_ids.add(sub.id)
+            if matched_cat_ids:
+                products = [p for p in products if p.category_id in matched_cat_ids
+                            or (p.category and p.category.parent_id in matched_cat_ids)]
+            else:
+                products = [p for p in products if p.category and p.category.name.lower() in [pt.lower() for pt in product_type_filter]]
 
-    return render_template('search.html', query=q, products=products,
-                           min_price=min_price, max_price=max_price)
+        # Sorting
+        if sort_by == 'price_asc':
+            products.sort(key=lambda p: float(p.price))
+        elif sort_by == 'price_desc':
+            products.sort(key=lambda p: float(p.price), reverse=True)
+        elif sort_by == 'name_asc':
+            products.sort(key=lambda p: p.name.lower())
+        elif sort_by == 'name_desc':
+            products.sort(key=lambda p: p.name.lower(), reverse=True)
+        elif sort_by == 'newest':
+            products.sort(key=lambda p: p.created or datetime.min, reverse=True)
+        elif sort_by == 'oldest':
+            products.sort(key=lambda p: p.created or datetime.min)
+        else:  # featured / default
+            products.sort(key=lambda p: (-(p.sort_order or 0), p.name.lower()))
+
+    # Pagination
+    total_products = len(products)
+    total_pages = max(1, (total_products + per_page - 1) // per_page)
+    page = min(page, total_pages)
+    products_page = products[(page - 1) * per_page : page * per_page]
+
+    # Build facet data for sidebar
+    # Use the matched result set for facets so filters only show options that exist
+    # in the current results. Fall back to all products only when no query was entered.
+    all_products_for_facets = Product.query.join(Category, isouter=True).all()
+    facet_source = products if has_filters else all_products_for_facets
+    # Buying For facets
+    bf_counts = {}
+    for p in facet_source:
+        for b in (p.buying_for or '').split(','):
+            b = b.strip()
+            if b:
+                bf_counts[b] = bf_counts.get(b, 0) + 1
+    # Color facets
+    col_counts = {}
+    for p in facet_source:
+        for c in (p.color or '').split(','):
+            c = c.strip()
+            if c:
+                col_counts[c] = col_counts.get(c, 0) + 1
+    # Category (product type) facets — show both parent category AND subcategories
+    # e.g. "Gifts (19)", "Silver Coins (3)", "Silver Idols (3)" etc.
+    # For top-level categories, count direct products + all subcategory products
+    # For subcategories, count their own products only
+    cat_counts = {}
+    source = facet_source
+    for p in source:
+        if not p.category:
+            continue
+        if p.category.parent_id:
+            # Product is in a subcategory — add count to subcategory AND to parent
+            cat_counts[p.category.name] = cat_counts.get(p.category.name, 0) + 1
+            parent_name = p.category.parent.name
+            cat_counts[parent_name] = cat_counts.get(parent_name, 0) + 1
+        else:
+            # Product is directly in a top-level category
+            cat_counts[p.category.name] = cat_counts.get(p.category.name, 0) + 1
+    # Build cat_tree: ordered list of dicts for the Product Type sidebar
+    # Each entry: {name, count, is_sub} — subcategories are indented under their parent
+    # We collect parents first, then their subs, preserving a logical order
+    _cat_parents = {}   # parent_name -> count
+    _cat_subs = {}      # parent_name -> [(sub_name, count)]
+    for p in source:
+        if not p.category:
+            continue
+        if p.category.parent_id:
+            parent_name = p.category.parent.name
+            _cat_parents[parent_name] = _cat_parents.get(parent_name, 0) + 1
+            subs = _cat_subs.setdefault(parent_name, {})
+            subs[p.category.name] = subs.get(p.category.name, 0) + 1
+        else:
+            _cat_parents[p.category.name] = _cat_parents.get(p.category.name, 0) + 1
+
+    cat_tree = []
+    for parent_name in sorted(_cat_parents):
+        cat_tree.append({'name': parent_name, 'count': _cat_parents[parent_name], 'is_sub': False})
+        for sub_name in sorted(_cat_subs.get(parent_name, {})):
+            cat_tree.append({'name': sub_name, 'count': _cat_subs[parent_name][sub_name], 'is_sub': True})
+
+    # Price range — use facet_source so slider reflects actual results
+    all_prices = [float(p.price) for p in (facet_source if facet_source else all_products_for_facets) if p.price]
+    global_max_price = int(max(all_prices)) if all_prices else 50000
+
+    return render_template('search.html', query=q, products=products_page,
+                           total_products=total_products,
+                           page=page, total_pages=total_pages, per_page=per_page,
+                           min_price=min_price, max_price=max_price,
+                           has_filters=has_filters or sort_by != 'featured',
+                           in_stock_only=in_stock_only,
+                           colors_filter=colors_filter,
+                           buying_for_filter=buying_for_filter,
+                           product_type_filter=product_type_filter,
+                           sort_by=sort_by,
+                           bf_counts=bf_counts,
+                           col_counts=col_counts,
+                           cat_counts=cat_counts,
+                           cat_tree=cat_tree,
+                           global_max_price=global_max_price)
 
 @app.route('/api/search')
 def api_search():
@@ -339,7 +508,8 @@ def admin_logout():
 @app.route('/admin')
 @login_required
 def admin_dashboard():
-    categories = Category.query.options(joinedload(Category.products)).all()
+    # Pass all categories; template will group by parent_id
+    categories = Category.query.options(joinedload(Category.products)).filter_by(parent_id=None).all()
     return render_template('admin/dashboard.html', categories=categories)
 
 @app.route('/admin/product/new', methods=['GET', 'POST'])
@@ -347,7 +517,15 @@ def admin_dashboard():
 @login_required
 def admin_product_form(id=None):
     product = Product.query.get(id) if id else None
-    categories = Category.query.all()
+    # Build ordered list: top-level cats first, then their subcategories indented
+    top_level = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+    categories = []
+    for cat in top_level:
+        categories.append(cat)
+        for sub in cat.subcategories.order_by(Category.name).all():
+            sub._display_name = f'\u00a0\u00a0\u00a0\u00a0↳ {sub.name}'
+            categories.append(sub)
+    # ensure plain cats without parent also listed (already top_level)
     if request.method == 'POST':
         name = request.form['name']
         price = request.form['price']
@@ -363,6 +541,10 @@ def admin_product_form(id=None):
         meta_keywords = request.form.get('meta_keywords', '')
         tags = request.form.get('tags', '')
         synonyms = request.form.get('synonyms', '')
+        color = request.form.get('color', '')
+        buying_for = request.form.get('buying_for', '')
+        is_in_stock = request.form.get('is_in_stock') == '1'
+        sort_order = int(request.form.get('sort_order', 0) or 0)
 
         if not product:
             product = Product()
@@ -378,6 +560,10 @@ def admin_product_form(id=None):
         product.meta_keywords = meta_keywords[:200]
         product.tags = tags[:500]
         product.synonyms = synonyms[:500]
+        product.color = color[:200] if color else None
+        product.buying_for = buying_for[:200] if buying_for else None
+        product.is_in_stock = is_in_stock
+        product.sort_order = sort_order
 
         # Fix: Always explicitly update images array with exactly what the form sent. 
         # This resolves an issue where deleting all images wouldn't reflect on the server.
@@ -449,10 +635,10 @@ def admin_homepage():
         flash('Homepage settings saved.', 'success')
         return redirect(url_for('admin_homepage'))
     budget_ranges = Settings.get('budget_ranges', [
-        {'label': 'Gifts Under ₹1499', 'url': '/search?min_price=0&max_price=1499'},
-        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?min_price=1499&max_price=2499'},
-        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?min_price=2499&max_price=4999'},
-        {'label': 'Gifts Above ₹4999', 'url': '/search?min_price=4999'},
+        {'label': 'Gifts Under ₹1499', 'url': '/search?product_type=Gifts&min_price=0&max_price=1499'},
+        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?product_type=Gifts&min_price=1499&max_price=2499'},
+        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?product_type=Gifts&min_price=2499&max_price=4999'},
+        {'label': 'Gifts Above ₹4999', 'url': '/search?product_type=Gifts&min_price=4999'},
     ])
     brand_promises = Settings.get('brand_promises', [
         {'icon': '925', 'title': 'Fine Silver Jewellery'},
@@ -467,15 +653,16 @@ def admin_homepage():
 def admin_categories():
     if request.method == 'POST':
         name = request.form['name']
+        parent_id = request.form.get('parent_id', type=int)
         slug = slugify(name)
         if not Category.query.filter_by(slug=slug).first():
-            db.session.add(Category(name=name, slug=slug, spec_schema=[]))
+            db.session.add(Category(name=name, slug=slug, spec_schema=[], parent_id=parent_id))
             db.session.commit()
             flash('Category added.', 'success')
         else:
             flash('Category already exists.', 'warning')
         return redirect(url_for('admin_categories'))
-    categories = Category.query.all()
+    categories = Category.query.filter_by(parent_id=None).all()
     return render_template('admin/categories.html', categories=categories)
 
 @app.route('/admin/category/<int:id>/delete', methods=['POST'])
@@ -533,12 +720,13 @@ def admin_category_upload_image(id):
 @login_required
 def add_category_ajax():
     name = request.json.get('name', '').strip()
+    parent_id = request.json.get('parent_id', None)
     if not name:
         return jsonify({'error': 'Name required'}), 400
     slug = slugify(name)
     if Category.query.filter_by(slug=slug).first():
         return jsonify({'error': 'Category already exists'}), 400
-    cat = Category(name=name, slug=slug, spec_schema=[])
+    cat = Category(name=name, slug=slug, spec_schema=[], parent_id=parent_id)
     db.session.add(cat)
     db.session.commit()
     return jsonify({'id': cat.id, 'name': cat.name})
@@ -709,7 +897,23 @@ with app.app_context():
             conn.commit()
         except Exception:
             conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE category ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES category(id)"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS color VARCHAR(200)"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS buying_for VARCHAR(200)"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS is_in_stock BOOLEAN NOT NULL DEFAULT TRUE"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
     Category.seed_defaults()
+    Category.seed_gifts()
     seed_sample_products()
 
 if __name__ == '__main__':

@@ -670,8 +670,8 @@
                 svg.setAttribute('stroke', 'var(--maroon)');
                 btn.setAttribute('title', 'Remove from Wishlist');
             } else {
-                svg.setAttribute('fill', 'none');
-                svg.setAttribute('stroke', 'currentColor');
+                svg.setAttribute('fill', '#fff');
+                svg.setAttribute('stroke', '#fff');
                 btn.setAttribute('title', 'Add to Wishlist');
             }
         }
@@ -770,24 +770,25 @@
             top: 10px;
             right: 10px;
             z-index: 3;
-            background: rgba(255,255,255,0.92);
-            border: 1px solid var(--border);
-            border-radius: 50%;
-            width: 34px;
-            height: 34px;
+            background: none;
+            border: none;
+            padding: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            color: var(--charcoal);
-            transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
-            backdrop-filter: blur(4px);
+            color: #fff;
+            filter: drop-shadow(0 1px 3px rgba(0,0,0,0.35));
+            transition: color 0.2s, transform 0.2s, filter 0.2s;
         }
         .wishlist-heart:hover {
-            background: #fff;
-            border-color: var(--maroon);
             color: var(--maroon);
-            transform: scale(1.1);
+            transform: scale(1.2);
+            filter: drop-shadow(0 2px 6px rgba(107,26,26,0.4));
+        }
+        .wishlist-heart.active {
+            color: var(--maroon);
+            filter: drop-shadow(0 1px 4px rgba(107,26,26,0.5));
         }
         @keyframes heartPop {
             0%   { transform: scale(1); }

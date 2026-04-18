@@ -94,7 +94,7 @@
                                 <select name="category_id" id="categorySelect" class="field-input">
                                     <option value="">— Select —</option>
                                     {% for cat in categories %}
-                                    <option value="{{ cat.id }}" {% if product and product.category_id == cat.id %}selected{% endif %}>{{ cat.name }}</option>
+                                    <option value="{{ cat.id }}" {% if product and product.category_id == cat.id %}selected{% endif %}>{{ cat._display_name if cat._display_name is defined else cat.name }}</option>
                                     {% endfor %}
                                 </select>
                                 <button type="button" id="showAddCategoryModal" class="new-cat-btn">+ New</button>
@@ -175,6 +175,35 @@
                         <div class="field-group">
                             <label class="field-label">Synonyms</label>
                             <input type="text" name="synonyms" id="synonyms" placeholder="comma separated" value="{{ product.synonyms if product else '' }}" class="field-input">
+                        </div>
+                    </div>
+
+                    <!-- Discoverability -->
+                    <div style="border-top:1px solid var(--border);padding-top:20px;margin-top:4px;">
+                        <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:var(--charcoal);font-weight:500;margin-bottom:16px;">Discoverability & Filters</div>
+                        <div class="form-row">
+                            <div class="field-group">
+                                <label class="field-label">Color(s) <span style="color:var(--muted);font-weight:300;text-transform:none;letter-spacing:0;">(comma separated)</span></label>
+                                <input type="text" name="color" placeholder="e.g. Silver, Gold, Oxidized" value="{{ product.color if product and product.color else '' }}" class="field-input">
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label">Buying For <span style="color:var(--muted);font-weight:300;text-transform:none;letter-spacing:0;">(comma separated)</span></label>
+                                <input type="text" name="buying_for" placeholder="e.g. Womens, Kids, Mens" value="{{ product.buying_for if product and product.buying_for else '' }}" class="field-input">
+                            </div>
+                        </div>
+                        <div class="form-row" style="margin-top:14px;">
+                            <div class="field-group">
+                                <label class="field-label">Sort Order <span style="color:var(--muted);font-weight:300;text-transform:none;letter-spacing:0;">(higher = appears first)</span></label>
+                                <input type="number" name="sort_order" value="{{ product.sort_order if product else 0 }}" class="field-input" min="0" step="1">
+                            </div>
+                            <div class="field-group" style="justify-content:flex-end;display:flex;flex-direction:column;">
+                                <label class="field-label">Availability</label>
+                                <label style="display:flex;align-items:center;gap:10px;padding:13px 0;cursor:pointer;">
+                                    <input type="checkbox" id="isInStockCheckbox" style="accent-color:var(--maroon);width:16px;height:16px;" {% if not product or product.is_in_stock %}checked{% endif %} onchange="document.getElementById('isInStockHidden').value=this.checked?'1':'0'">
+                                    <input type="hidden" name="is_in_stock" id="isInStockHidden" value="{{ '1' if not product or product.is_in_stock else '0' }}">
+                                    <span style="font-size:13px;color:var(--charcoal);">In Stock</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>

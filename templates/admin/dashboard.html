@@ -95,7 +95,7 @@
             </svg>
             <span class="cat-toggle-name">{{ category.name }}</span>
         </div>
-        <span class="cat-toggle-count">{{ category.products|length }} piece{{ 's' if category.products|length != 1 else '' }}</span>
+        <span class="cat-toggle-count">{{ category.products|length }}{% set subcats = category.subcategories.all() %}{% if subcats %} + {{ subcats|map(attribute='products')|map('list')|sum(start=[])|list|length }} in subcategories{% endif %} piece{{ 's' if (category.products|length) != 1 else '' }}</span>
     </button>
     <div class="category-content" id="category-{{ category.id }}-content" style="display:none;">
         {% if category.products %}
@@ -119,6 +119,39 @@
         </table>
         {% else %}
         <div class="empty-category">No products in this category yet.</div>
+        {% endif %}
+        {% set subcats = category.subcategories.all() %}
+        {% if subcats %}
+        <div style="border-top:1px solid var(--border);background:var(--ivory);">
+            {% for sub in subcats %}
+            <div style="border-bottom:1px solid var(--border);">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 24px 14px 44px;">
+                    <span style="font-family:'Playfair Display',serif;font-size:16px;font-weight:600;color:var(--charcoal);">↳ {{ sub.name }}</span>
+                    <span class="cat-toggle-count">{{ sub.products|length }} piece{{ 's' if sub.products|length != 1 else '' }}</span>
+                </div>
+                {% if sub.products %}
+                <table class="product-table" style="border-top:1px solid var(--border);">
+                    <thead><tr><th style="padding-left:44px;">Image</th><th>Name</th><th>Price</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        {% for p in sub.products %}
+                        <tr>
+                            <td style="padding-left:44px;">{% if p.images %}<img src="/uploads/{{ p.images[0] }}" class="product-thumbnail" alt="{{ p.name }}">{% else %}<div class="thumb-placeholder">◇</div>{% endif %}</td>
+                            <td class="product-name-cell">{{ p.name }}</td>
+                            <td class="product-price-cell">₹{{ "{:,.0f}".format(p.price) }}</td>
+                            <td>
+                                <a href="/admin/product/{{ p.id }}/edit" class="table-action-link">Edit</a>
+                                <form action="/admin/product/{{ p.id }}/delete" method="POST" class="inline" onsubmit="return confirm('Delete {{ p.name }}?')">
+                                    <button class="table-action-delete">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
         {% endif %}
     </div>
 </div>
