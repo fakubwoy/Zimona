@@ -407,9 +407,7 @@
         .section-title { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 700; color: var(--charcoal); margin-bottom: 6px; }
         .section-sub { font-size: 14px; color: var(--muted); }
 
-        /* ══════════════════════════════════════
-           HAMBURGER BUTTON (hidden on desktop)
-        ══════════════════════════════════════ */
+        /* HAMBURGER */
         .nav-hamburger {
             display: none;
             flex-direction: column;
@@ -433,7 +431,7 @@
         .nav-hamburger.open span:nth-child(2) { opacity: 0; }
         .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-        /* Mobile nav drawer */
+        /* MOBILE NAV DRAWER */
         .mobile-nav {
             display: none;
             flex-direction: column;
@@ -457,10 +455,7 @@
             display: block;
         }
         .mobile-nav a:hover { background: var(--ivory); color: var(--maroon); }
-        .mobile-nav-search {
-            padding: 14px 24px;
-            border-bottom: 1px solid var(--border);
-        }
+        .mobile-nav-search { padding: 14px 24px; border-bottom: 1px solid var(--border); }
         .mobile-nav-search form { display: flex; border: 1px solid var(--border); }
         .mobile-nav-search input {
             flex: 1;
@@ -472,18 +467,9 @@
             color: var(--charcoal);
             outline: none;
         }
-        .mobile-nav-search button {
-            background: var(--maroon);
-            border: none;
-            color: #fff;
-            padding: 0 16px;
-            cursor: pointer;
-        }
+        .mobile-nav-search button { background: var(--maroon); border: none; color: #fff; padding: 0 16px; cursor: pointer; }
 
-        /* ══════════════════════════════════════
-           RESPONSIVE BREAKPOINTS
-        ══════════════════════════════════════ */
-
+        /* RESPONSIVE */
         @media (max-width: 768px) {
             .nav-inner { padding: 0 20px; height: 60px; }
             .nav-links { display: none; }
@@ -491,26 +477,14 @@
             .nav-hamburger { display: flex; }
             .mobile-nav { display: flex; }
             .nav-logo { font-size: 24px; }
-
             main.padded { padding: 32px 20px; }
-
-            .trust-bar-inner {
-                grid-template-columns: repeat(2, 1fr);
-                padding: 0;
-            }
-            .trust-item {
-                padding: 16px 18px;
-                border-right: none;
-                border-bottom: 1px solid var(--border);
-            }
+            .trust-bar-inner { grid-template-columns: repeat(2, 1fr); padding: 0; }
+            .trust-item { padding: 16px 18px; border-right: none; border-bottom: 1px solid var(--border); }
             .trust-item:nth-child(odd) { border-right: 1px solid var(--border); }
-            .trust-item:nth-child(3),
-            .trust-item:nth-child(4) { border-bottom: none; }
-
+            .trust-item:nth-child(3), .trust-item:nth-child(4) { border-bottom: none; }
             footer { padding: 40px 20px 24px; margin-top: 48px; }
             .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
             .footer-bottom { flex-direction: column; align-items: flex-start; gap: 14px; }
-
             .section-title { font-size: 26px; }
             .announcement-bar { font-size: 10px; letter-spacing: 0.08em; padding: 8px 14px; }
         }
@@ -519,19 +493,15 @@
             .nav-inner { padding: 0 16px; height: 56px; }
             .nav-logo { font-size: 22px; }
             .nav-right { gap: 10px; }
-
             main.padded { padding: 24px 16px; }
-
             .trust-bar-inner { grid-template-columns: 1fr; }
             .trust-item { border-right: none !important; border-bottom: 1px solid var(--border); padding: 14px 20px; }
             .trust-item:last-child { border-bottom: none; }
-
             footer { padding: 32px 16px 20px; }
             .footer-grid { grid-template-columns: 1fr; gap: 28px; }
             .footer-brand-desc { max-width: 100%; }
             .footer-bottom { gap: 12px; }
             .footer-copy { font-size: 11px; }
-
             .section-title { font-size: 22px; }
             .section-sub { font-size: 13px; }
             .btn-primary, .btn-outline, .btn-white { padding: 12px 24px; font-size: 11px; }
@@ -541,7 +511,25 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <div class="announcement-bar">✦ FINE SILVER JEWELLERY &nbsp;·&nbsp; 925 STERLING CERTIFIED &nbsp;·&nbsp; FREE SHIPPING ABOVE ₹1999 ✦</div>
+    <div class="announcement-bar" id="announcementBar">
+        <span id="announcementText">✦ FINE SILVER JEWELLERY ✦</span>
+    </div>
+    <script>
+        (function() {
+            const messages = [
+                '✦ FINE SILVER JEWELLERY ✦',
+                '✦ 925 STERLING CERTIFIED ✦',
+                '✦ FREE SHIPPING ABOVE ₹1999 ✦'
+            ];
+            let current = 0;
+            const el = document.getElementById('announcementText');
+            const bar = document.getElementById('announcementBar');
+            setInterval(function() {
+                current = (current + 1) % messages.length;
+                el.textContent = messages[current];
+            }, 3000);
+        })();
+    </script>
 
     {% if admin_logged_in %}
     <div style="background:var(--maroon-deep);color:rgba(255,255,255,0.8);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;padding:7px 40px;display:flex;justify-content:space-between;align-items:center;">
@@ -592,9 +580,7 @@
         <div class="mobile-nav-search">
             <form action="/search" method="get">
                 <input type="text" name="q" placeholder="Search jewellery…">
-                <button type="submit">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                </button>
+                <button type="submit"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
             </form>
         </div>
         <a href="/">Home</a>
