@@ -539,19 +539,85 @@
     left: 100%;
 }
 
-/* Responsive */
+/* ══════════════════════════════════════
+   INDEX PAGE RESPONSIVE
+══════════════════════════════════════ */
 @media (max-width: 768px) {
-    #budgetRangesGrid {
-        grid-template-columns: 1fr !important;
-        gap: 16px;
+    /* Hero */
+    .hero-carousel { height: auto; min-height: 420px; }
+    .hero-slide-content {
+        grid-template-columns: 1fr;
+        padding: 48px 24px 60px;
+        gap: 32px;
     }
-    .budget-card-maroon {
-        aspect-ratio: auto;
-        min-height: 200px;
-    }
-    .budget-maroon-label {
-        font-size: 20px;
-    }
+    .slide-img-panel { display: none; }
+    .hero-title { font-size: clamp(30px, 8vw, 44px); }
+    .hero-sub { font-size: 14px; margin-bottom: 24px; }
+    .hero-ctas { gap: 10px; }
+    .carousel-arrow { display: none; }
+
+    /* Collections */
+    .section-block { padding: 40px 20px; }
+    .collections-grid { grid-template-columns: 1fr; gap: 14px; }
+    .collection-card { aspect-ratio: 16/8; }
+    .collection-card.tall { aspect-ratio: 16/8; }
+    .collection-name { font-size: 22px; }
+
+    /* Category photo grid */
+    .cat-photo-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+
+    /* Products grid */
+    .products-section { padding: 16px 20px 48px; }
+    .products-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .product-name { font-size: 15px; }
+    .product-info { padding: 12px 14px 16px; }
+
+    /* Brand promise */
+    #brandPromiseGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 0; }
+
+    /* Budget */
+    #budgetRangesGrid { grid-template-columns: repeat(2, 1fr) !important; gap: 14px; }
+    .budget-card-maroon { aspect-ratio: auto; min-height: 180px; }
+    .budget-maroon-label { font-size: 18px; }
+    .budget-maroon-ornament { font-size: 36px; margin-bottom: 12px; }
+
+    /* Section paddings */
+    .products-section { padding: 16px 20px 40px; }
+    div[style*="padding:64px 40px"] { padding: 40px 20px !important; }
+    div[style*="padding:0 40px 64px"] { padding: 0 20px 40px !important; }
+}
+
+@media (max-width: 480px) {
+    /* Hero */
+    .hero-carousel { min-height: 360px; }
+    .hero-slide-content { padding: 40px 16px 56px; }
+    .hero-title { font-size: clamp(26px, 9vw, 36px); }
+    .hero-eyebrow { font-size: 10px; }
+    .hero-sub { font-size: 13px; }
+    .hero-ctas .btn-white,
+    .hero-ctas .btn-outline { padding: 11px 20px; font-size: 10px; }
+
+    /* Category grid */
+    .cat-photo-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .cat-photo-name { font-size: 14px; }
+
+    /* Products */
+    .products-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .product-name { font-size: 14px; }
+    .product-price { font-size: 13px; }
+
+    /* Budget — single column on very small */
+    #budgetRangesGrid { grid-template-columns: 1fr !important; gap: 12px; }
+    .budget-card-maroon { min-height: 160px; }
+
+    /* Brand promise — wrap to 2 cols */
+    #brandPromiseGrid { grid-template-columns: repeat(2, 1fr) !important; }
+
+    /* Section blocks */
+    .section-block { padding: 32px 16px; }
+    div[style*="padding:64px 40px"] { padding: 32px 16px !important; }
+    div[style*="padding:0 40px 64px"] { padding: 0 16px 32px !important; }
+    div[style*="padding:48px 40px"] { padding: 32px 16px !important; }
 }
 </style>
 {% endblock %}
