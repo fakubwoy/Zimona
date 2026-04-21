@@ -1,4 +1,4 @@
-import os, re, json, secrets, time
+import os, re, json, secrets, time, requests as _requests
 from datetime import datetime
 from functools import wraps
 from PIL import Image
@@ -47,6 +47,19 @@ def slugify(text):
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+def compute_silver_price(product, live_rate_per_kg, premium_per_kg):
+    """
+    Compute the auto price for a silver-priced product.
+    Formula: ((live_rate_per_kg + premium_per_kg) / 1000) * weight_grams * multiplier + fixed_addition
+    """
+    if not product.silver_pricing_enabled or not product.silver_weight_grams:
+        return None
+    rate_per_gram = (live_rate_per_kg + premium_per_kg) / 1000.0
+    base = rate_per_gram * float(product.silver_weight_grams)
+    multiplier = float(product.silver_multiplier) if product.silver_multiplier else 1.0
+    fixed = float(product.silver_fixed_addition) if product.silver_fixed_addition else 0.0
+    return round(base * multiplier + fixed, 2)
 
 def compress_image(filepath, max_size=(1200, 1200), quality=85):
     with Image.open(filepath) as img:
@@ -162,6 +175,12 @@ class Product(db.Model):
     created = db.Column(db.DateTime, default=datetime.utcnow)
     updated = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Silver live pricing
+    silver_pricing_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    silver_weight_grams    = db.Column(db.Numeric(8, 3), nullable=True)   # weight in grams
+    silver_multiplier      = db.Column(db.Numeric(6, 4), nullable=True)   # e.g. 1.15 for 15% making charge
+    silver_fixed_addition  = db.Column(db.Numeric(10, 2), nullable=True)  # fixed per-product addition (optional)
+
     def to_dict(self):
         return {
             'id': self.id, 'name': self.name, 'slug': self.slug,
@@ -173,7 +192,11 @@ class Product(db.Model):
             'color': self.color, 'buying_for': self.buying_for,
             'is_in_stock': self.is_in_stock, 'sort_order': self.sort_order,
             'rating_value': float(self.rating_value) if self.rating_value else None,
-            'rating_count': self.rating_count
+            'rating_count': self.rating_count,
+            'silver_pricing_enabled': self.silver_pricing_enabled,
+            'silver_weight_grams': float(self.silver_weight_grams) if self.silver_weight_grams else None,
+            'silver_multiplier': float(self.silver_multiplier) if self.silver_multiplier else None,
+            'silver_fixed_addition': float(self.silver_fixed_addition) if self.silver_fixed_addition else None,
         }
 
 # ---------- Seed Sample Products ----------
@@ -731,7 +754,13 @@ def admin_logout():
 def admin_dashboard():
     # Pass all categories; template will group by parent_id
     categories = Category.query.options(joinedload(Category.products)).filter_by(parent_id=None).all()
-    return render_template('admin/dashboard.html', categories=categories)
+    silver_settings = {
+        'live_rate_per_kg': Settings.get('silver_live_rate_per_kg', 0) or 0,
+        'premium_per_kg':   Settings.get('silver_premium_per_kg',   0) or 0,
+        'auto_update':      Settings.get('silver_auto_update',       False),
+        'updated_at':       Settings.get('silver_rate_updated_at',   None),
+    }
+    return render_template('admin/dashboard.html', categories=categories, silver_settings=silver_settings)
 
 @app.route('/admin/product/new', methods=['GET', 'POST'])
 @app.route('/admin/product/<int:id>/edit', methods=['GET', 'POST'])
@@ -771,6 +800,15 @@ def admin_product_form(id=None):
         rating_value = float(rating_value_raw) if rating_value_raw else None
         rating_count = int(rating_count_raw) if rating_count_raw else 0
 
+        # Silver live pricing fields
+        silver_pricing_enabled = request.form.get('silver_pricing_enabled') == '1'
+        silver_weight_raw = request.form.get('silver_weight_grams', '').strip()
+        silver_mult_raw   = request.form.get('silver_multiplier', '').strip()
+        silver_fixed_raw  = request.form.get('silver_fixed_addition', '').strip()
+        silver_weight_grams   = float(silver_weight_raw) if silver_weight_raw else None
+        silver_multiplier     = float(silver_mult_raw)   if silver_mult_raw   else None
+        silver_fixed_addition = float(silver_fixed_raw)  if silver_fixed_raw  else None
+
         if not product:
             product = Product()
             db.session.add(product)
@@ -791,6 +829,18 @@ def admin_product_form(id=None):
         product.sort_order = sort_order
         product.rating_value = rating_value
         product.rating_count = rating_count
+        product.silver_pricing_enabled = silver_pricing_enabled
+        product.silver_weight_grams    = silver_weight_grams
+        product.silver_multiplier      = silver_multiplier
+        product.silver_fixed_addition  = silver_fixed_addition
+
+        # If silver pricing is enabled, auto-compute price from current live rate
+        if silver_pricing_enabled and silver_weight_grams:
+            live_rate = Settings.get('silver_live_rate_per_kg', 0) or 0
+            premium   = Settings.get('silver_premium_per_kg', 0) or 0
+            computed  = compute_silver_price(product, float(live_rate), float(premium))
+            if computed is not None:
+                product.price = computed
 
         # Fix: Always explicitly update images array with exactly what the form sent. 
         # This resolves an issue where deleting all images wouldn't reflect on the server.
@@ -1001,7 +1051,167 @@ def category_spec_values(id):
                 values.add(str(val))
     return jsonify(sorted(list(values)))
 
-# ---------- AI Endpoints (SEO & Assistant) ----------
+# ---------- Silver Rate Settings ----------
+@app.route('/admin/silver-rate', methods=['GET', 'POST'])
+@login_required
+def admin_silver_rate():
+    if request.method == 'POST':
+        data = request.json or {}
+        live_rate = data.get('live_rate_per_kg')
+        premium   = data.get('premium_per_kg', 0)
+        auto_update = data.get('auto_update', False)
+        if live_rate is None:
+            return jsonify({'error': 'live_rate_per_kg required'}), 400
+        Settings.set('silver_live_rate_per_kg', float(live_rate))
+        Settings.set('silver_premium_per_kg',   float(premium))
+        Settings.set('silver_auto_update',       bool(auto_update))
+        Settings.set('silver_rate_updated_at',   datetime.utcnow().isoformat())
+        updated = 0
+        if auto_update:
+            products = Product.query.filter_by(silver_pricing_enabled=True).all()
+            for p in products:
+                new_price = compute_silver_price(p, float(live_rate), float(premium))
+                if new_price is not None:
+                    p.price = new_price
+                    updated += 1
+            db.session.commit()
+        return jsonify({
+            'ok': True,
+            'live_rate_per_kg': float(live_rate),
+            'premium_per_kg': float(premium),
+            'updated_products': updated,
+            'updated_at': Settings.get('silver_rate_updated_at'),
+        })
+    # GET – return current settings
+    return jsonify({
+        'live_rate_per_kg': Settings.get('silver_live_rate_per_kg', 0),
+        'premium_per_kg':   Settings.get('silver_premium_per_kg',   0),
+        'auto_update':      Settings.get('silver_auto_update',       False),
+        'updated_at':       Settings.get('silver_rate_updated_at',   None),
+    })
+
+
+@app.route('/admin/silver-rate/preview', methods=['POST'])
+@login_required
+def silver_rate_preview():
+    """Return updated prices for all silver-priced products without saving."""
+    data = request.json or {}
+    live_rate = float(data.get('live_rate_per_kg', 0))
+    premium   = float(data.get('premium_per_kg', 0))
+    products  = Product.query.filter_by(silver_pricing_enabled=True).all()
+    preview   = []
+    for p in products:
+        new_price = compute_silver_price(p, live_rate, premium)
+        if new_price is not None:
+            preview.append({
+                'id': p.id,
+                'name': p.name,
+                'current_price': float(p.price),
+                'new_price': new_price,
+                'weight_grams': float(p.silver_weight_grams),
+                'multiplier': float(p.silver_multiplier) if p.silver_multiplier else 1.0,
+                'category': p.category.name if p.category else '—',
+            })
+    return jsonify({'products': preview, 'count': len(preview)})
+
+@app.route('/admin/silver-rate/fetch-live', methods=['GET'])
+@login_required
+def fetch_live_silver_rate():
+    """
+    Fetch today's live silver spot price in INR per kg from free public APIs.
+    Tries multiple sources in order; returns the first successful result.
+    """
+    # --- Source 1: metals-api.com (free tier, 50 req/month) ---
+    # Requires METALS_API_KEY env var. Falls through gracefully if not set.
+    metals_api_key = os.environ.get('METALS_API_KEY', '')
+    if metals_api_key:
+        try:
+            r = _requests.get(
+                'https://metals-api.com/api/latest',
+                params={'access_key': metals_api_key, 'base': 'INR', 'symbols': 'XAG'},
+                timeout=6
+            )
+            d = r.json()
+            if d.get('success') and d.get('rates', {}).get('XAG'):
+                # XAG rate = how many XAG per 1 INR  →  invert to get INR per troy oz
+                inr_per_troy_oz = 1.0 / float(d['rates']['XAG'])
+                inr_per_kg = round(inr_per_troy_oz * 32.1507, 2)   # 1 kg = 32.1507 troy oz
+                return jsonify({
+                    'rate_per_kg': inr_per_kg,
+                    'source': 'metals-api.com',
+                    'timestamp': datetime.utcnow().strftime('%d %b %Y, %H:%M UTC'),
+                })
+        except Exception:
+            pass
+
+    # --- Source 2: metalpriceapi.com (free tier, 100 req/month) ---
+    metal_price_api_key = os.environ.get('METAL_PRICE_API_KEY', '')
+    if metal_price_api_key:
+        try:
+            r = _requests.get(
+                'https://api.metalpriceapi.com/v1/latest',
+                params={'api_key': metal_price_api_key, 'base': 'INR', 'currencies': 'XAG'},
+                timeout=6
+            )
+            d = r.json()
+            if d.get('success') and d.get('rates', {}).get('XAG'):
+                inr_per_troy_oz = 1.0 / float(d['rates']['XAG'])
+                inr_per_kg = round(inr_per_troy_oz * 32.1507, 2)
+                return jsonify({
+                    'rate_per_kg': inr_per_kg,
+                    'source': 'metalpriceapi.com',
+                    'timestamp': datetime.utcnow().strftime('%d %b %Y, %H:%M UTC'),
+                })
+        except Exception:
+            pass
+
+    # --- Source 3: Frankfurter / exchangerate + manual silver USD→INR conversion ---
+    # Uses exchangerate-api.com (free, no key needed) for USD→INR,
+    # and the open metals endpoint from commodity-price-api for silver in USD.
+    try:
+        # Step A: get silver price in USD per troy oz (open, no-key)
+        silver_r = _requests.get(
+            'https://query1.finance.yahoo.com/v8/finance/chart/SI%3DF',
+            headers={'User-Agent': 'Mozilla/5.0'},
+            params={'interval': '1d', 'range': '1d'},
+            timeout=6
+        )
+        silver_data = silver_r.json()
+        silver_usd_per_oz = float(
+            silver_data['chart']['result'][0]['meta']['regularMarketPrice']
+        )
+
+        # Step B: get USD → INR rate (open, no key needed)
+        fx_r = _requests.get(
+            'https://api.frankfurter.app/latest',
+            params={'from': 'USD', 'to': 'INR'},
+            timeout=5
+        )
+        fx_data = fx_r.json()
+        usd_to_inr = float(fx_data['rates']['INR'])
+
+        inr_per_troy_oz = silver_usd_per_oz * usd_to_inr
+        inr_per_kg = round(inr_per_troy_oz * 32.1507, 2)
+        return jsonify({
+            'rate_per_kg': inr_per_kg,
+            'source': 'Yahoo Finance + Frankfurter FX',
+            'timestamp': datetime.utcnow().strftime('%d %b %Y, %H:%M UTC'),
+        })
+    except Exception as e:
+        pass
+
+    # --- All sources failed ---
+    return jsonify({
+        'error': (
+            'Could not fetch live silver rate automatically. '
+            'Set METALS_API_KEY or METAL_PRICE_API_KEY environment variables for '
+            'a more reliable feed (metals-api.com or metalpriceapi.com offer free tiers). '
+            'You can also enter the rate manually.'
+        )
+    }), 503
+
+
+
 @app.route('/admin/ai-seo', methods=['POST'])
 @login_required
 def ai_seo():
@@ -1150,6 +1360,15 @@ with app.app_context():
         try:
             conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_value NUMERIC(3,2) DEFAULT NULL"))
             conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_count INTEGER DEFAULT 0"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_pricing_enabled BOOLEAN NOT NULL DEFAULT FALSE"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_weight_grams NUMERIC(8,3)"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_multiplier NUMERIC(6,4)"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_fixed_addition NUMERIC(10,2)"))
             conn.commit()
         except Exception:
             conn.rollback()

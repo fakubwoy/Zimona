@@ -58,6 +58,18 @@
     .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
 
     .form-actions { grid-column: 1 / -1; display: flex; gap: 14px; padding-top: 28px; border-top: 1px solid var(--border); }
+
+    /* SILVER PRICING */
+    .silver-pricing-section { border: 1px solid #BDD6E3; background: #F4F9FB; padding: 20px; margin-top: 8px; }
+    .silver-pricing-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0; }
+    .silver-pricing-toggle input[type=checkbox] { accent-color: #4A7A95; width: 16px; height: 16px; }
+    .silver-pricing-toggle-label { font-size: 12px; letter-spacing: 0.06em; font-weight: 500; color: #2E5E76; }
+    .silver-pricing-toggle-sub { font-size: 11px; color: var(--muted); margin-left: 26px; margin-top: 3px; }
+    .silver-pricing-fields { margin-top: 18px; display: flex; flex-direction: column; gap: 14px; }
+    .silver-fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .silver-computed-preview { padding: 12px 14px; background: #fff; border: 1px solid #BDD6E3; font-size: 12px; color: #2E5E76; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .silver-computed-price { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: #2E5E76; }
+    .silver-no-rate-warn { font-size: 11px; color: #B7660A; }
 </style>
 {% endblock %}
 
@@ -86,7 +98,10 @@
                     <div class="form-row">
                         <div class="field-group">
                             <label class="field-label">Price (₹) *</label>
-                            <input type="number" step="0.01" name="price" value="{{ product.price if product else '' }}" required class="field-input">
+                            <input type="number" step="0.01" name="price" id="priceField" value="{{ product.price if product else '' }}" required class="field-input" {% if product and product.silver_pricing_enabled %}style="background:#f8f4f0;color:var(--muted);"{% endif %}>
+                            <div style="font-size:11px;color:var(--muted);margin-top:4px;" id="priceFieldNote">
+                                {% if product and product.silver_pricing_enabled %}Auto-computed from silver rate — saved on submit.{% endif %}
+                            </div>
                         </div>
                         <div class="field-group">
                             <label class="field-label">Category</label>
@@ -98,6 +113,52 @@
                                     {% endfor %}
                                 </select>
                                 <button type="button" id="showAddCategoryModal" class="new-cat-btn">+ New</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SILVER LIVE PRICING -->
+                    <div class="silver-pricing-section">
+                        <label class="silver-pricing-toggle">
+                            <input type="checkbox" id="silverPricingEnabled" {% if product and product.silver_pricing_enabled %}checked{% endif %}
+                                onchange="document.getElementById('silverHidden').value=this.checked?'1':'0'; toggleSilverFields(this.checked);">
+                            <input type="hidden" name="silver_pricing_enabled" id="silverHidden" value="{{ '1' if product and product.silver_pricing_enabled else '0' }}">
+                            <span class="silver-pricing-toggle-label">⬡ Auto-price from Live Silver Rate</span>
+                        </label>
+                        <div class="silver-pricing-toggle-sub">Price will be computed as: (Live Rate + Premium) ÷ 1000 × Weight × Multiplier + Fixed Addition</div>
+
+                        <div class="silver-pricing-fields" id="silverPricingFields" style="display:{% if product and product.silver_pricing_enabled %}flex{% else %}none{% endif %};">
+                            <div class="silver-fields-grid">
+                                <div class="field-group" style="margin:0;">
+                                    <label class="field-label">Weight (grams) *</label>
+                                    <input type="number" step="0.001" min="0" name="silver_weight_grams" id="silverWeight"
+                                        value="{{ product.silver_weight_grams if product and product.silver_weight_grams else '' }}"
+                                        placeholder="e.g. 12.5" class="field-input" oninput="recomputeSilverPrice()">
+                                </div>
+                                <div class="field-group" style="margin:0;">
+                                    <label class="field-label">Multiplier <span style="color:var(--muted);font-weight:300;text-transform:none;letter-spacing:0;">(making charges etc.)</span></label>
+                                    <input type="number" step="0.0001" min="0" name="silver_multiplier" id="silverMultiplier"
+                                        value="{{ product.silver_multiplier if product and product.silver_multiplier else '' }}"
+                                        placeholder="e.g. 1.15 for 15% making charge" class="field-input" oninput="recomputeSilverPrice()">
+                                </div>
+                            </div>
+                            <div class="field-group" style="margin:0;">
+                                <label class="field-label">Fixed Addition (₹) <span style="color:var(--muted);font-weight:300;text-transform:none;letter-spacing:0;">optional — stone cost, box, etc.</span></label>
+                                <input type="number" step="0.01" min="0" name="silver_fixed_addition" id="silverFixedAddition"
+                                    value="{{ product.silver_fixed_addition if product and product.silver_fixed_addition else '' }}"
+                                    placeholder="e.g. 500" class="field-input" oninput="recomputeSilverPrice()">
+                            </div>
+                            <div class="silver-computed-preview" id="silverComputedPreview">
+                                <div>
+                                    <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Computed Price at Current Live Rate</div>
+                                    <div id="silverComputedPriceDisplay" class="silver-computed-price">—</div>
+                                    <div id="silverRateUsed" style="font-size:11px;color:var(--muted);margin-top:2px;"></div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:4px;">Live Rate (₹/kg)</div>
+                                    <div id="silverLiveRateDisplay" style="font-size:16px;font-weight:600;color:#4A7A95;">—</div>
+                                    <div id="silverPremiumDisplay" style="font-size:11px;color:var(--muted);margin-top:2px;"></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -355,8 +416,20 @@
         const name = document.querySelector('input[name="name"]').value;
         const desc = document.querySelector('textarea[name="description"]').value;
         const btn = document.getElementById('generateSeo'); btn.textContent = '…'; btn.disabled = true;
-        try { const res = await fetch('/admin/ai-seo', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, desc}) }); const data = await res.json(); if (data.meta_title) document.getElementById('meta_title').value = data.meta_title; if (data.meta_description) document.getElementById('meta_description').value = data.meta_description; if (data.meta_keywords) document.getElementById('meta_keywords').value = data.meta_keywords; if (data.tags) document.getElementById('tags').value = data.tags; if (data.synonyms) document.getElementById('synonyms').value = data.synonyms; }
-        catch(e) { alert('SEO generation failed.'); }
+        try {
+            const res = await fetch('/admin/ai-seo', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name, desc}) });
+            const data = await res.json();
+            if (data.error) { alert('SEO generation failed: ' + data.error); return; }
+            if (data.meta_title)       { document.getElementById('meta_title').value = data.meta_title; document.getElementById('meta_title').dispatchEvent(new Event('input')); }
+            if (data.meta_description) { document.getElementById('meta_description').value = data.meta_description; }
+            if (data.meta_keywords)    { document.getElementById('meta_keywords').value = data.meta_keywords; }
+            if (data.tags)             { const newTags = data.tags.split(',').map(t => t.trim()).filter(Boolean); newTags.forEach(t => { if (!badgeOptions.includes(t)) badgeOptions.push(t); selectedBadges.add(t); }); updateTagsHidden(); renderBadges(); }
+            if (data.synonyms)         { document.getElementById('synonyms').value = data.synonyms; }
+            btn.textContent = '✓ Generated'; btn.style.color = '#2A6B3C';
+            setTimeout(() => { btn.textContent = '✦ Generate with AI'; btn.style.color = ''; }, 2500);
+            return;
+        }
+        catch(e) { alert('SEO generation failed: ' + e.message); }
         finally { btn.textContent = '✦ Generate with AI'; btn.disabled = false; }
     });
 
@@ -580,5 +653,74 @@
         ratingCntInput.addEventListener('input', updateRatingPreview);
         updateRatingPreview();
     }
+    // ── SILVER LIVE PRICING ──
+    let _silverLiveRate = 0, _silverPremium = 0;
+
+    function toggleSilverFields(on) {
+        document.getElementById('silverPricingFields').style.display = on ? 'flex' : 'none';
+        const priceField = document.getElementById('priceField');
+        const note = document.getElementById('priceFieldNote');
+        if (on) {
+            priceField.style.background = '#f8f4f0';
+            priceField.style.color = 'var(--muted)';
+            note.textContent = 'Auto-computed from silver rate — saved on submit.';
+            recomputeSilverPrice();
+        } else {
+            priceField.style.background = '';
+            priceField.style.color = '';
+            note.textContent = '';
+        }
+    }
+
+    async function loadSilverRate() {
+        try {
+            const res = await fetch('/admin/silver-rate');
+            const data = await res.json();
+            _silverLiveRate = parseFloat(data.live_rate_per_kg) || 0;
+            _silverPremium  = parseFloat(data.premium_per_kg)  || 0;
+            const display = document.getElementById('silverLiveRateDisplay');
+            const premDisp = document.getElementById('silverPremiumDisplay');
+            if (display) {
+                display.textContent = _silverLiveRate ? '₹' + _silverLiveRate.toLocaleString('en-IN') : 'Not set';
+            }
+            if (premDisp && _silverPremium) {
+                premDisp.textContent = '+ ₹' + _silverPremium.toLocaleString('en-IN') + ' premium';
+            }
+            recomputeSilverPrice();
+        } catch(e) {}
+    }
+
+    function recomputeSilverPrice() {
+        const enabled = document.getElementById('silverPricingEnabled').checked;
+        if (!enabled) return;
+        const weight = parseFloat(document.getElementById('silverWeight').value) || 0;
+        const mult   = parseFloat(document.getElementById('silverMultiplier').value) || 1;
+        const fixed  = parseFloat(document.getElementById('silverFixedAddition').value) || 0;
+        const display = document.getElementById('silverComputedPriceDisplay');
+        const rateUsed = document.getElementById('silverRateUsed');
+        const priceField = document.getElementById('priceField');
+
+        if (!_silverLiveRate) {
+            display.textContent = '—';
+            if (rateUsed) rateUsed.innerHTML = '<span style="color:#B7660A;">⚠ No live rate set — go to Dashboard to set it first</span>';
+            return;
+        }
+        if (!weight) {
+            display.textContent = '—';
+            if (rateUsed) rateUsed.textContent = 'Enter weight to see computed price';
+            return;
+        }
+        const ratePerGram = (_silverLiveRate + _silverPremium) / 1000;
+        const computed = Math.round((ratePerGram * weight * mult + fixed) * 100) / 100;
+        display.textContent = '₹' + computed.toLocaleString('en-IN', {maximumFractionDigits: 0});
+        if (rateUsed) {
+            rateUsed.textContent = `(${weight}g × ₹${ratePerGram.toFixed(2)}/g × ${mult}` + (fixed ? ` + ₹${fixed}` : '') + `)`;
+        }
+        // Push into price field so it submits correctly
+        priceField.value = computed;
+    }
+
+    // Load rate on page open
+    loadSilverRate();
 </script>
 {% endblock %}

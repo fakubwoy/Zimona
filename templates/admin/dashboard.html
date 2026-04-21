@@ -50,6 +50,42 @@
     .table-action-delete:hover { color: #C0392B; }
     .empty-category { padding: 32px; text-align: center; font-size: 13px; color: var(--muted); font-style: italic; border-top: 1px solid var(--border); }
     .inline { display: inline; }
+
+    /* SILVER RATE PANEL */
+    .silver-panel { background: #fff; border: 1px solid var(--border); border-left: 4px solid #7C9BAF; padding: 32px; margin-bottom: 40px; }
+    .silver-panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .silver-panel-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+    .silver-panel-badge { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; background: #EBF3F8; color: #4A7A95; border: 1px solid #BDD6E3; padding: 5px 12px; font-weight: 500; white-space: nowrap; align-self: flex-start; margin-top: 4px; border-radius: 2px; }
+    .silver-panel-sub { font-size: 12px; color: var(--muted); margin-bottom: 0; }
+    .silver-rate-grid { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 16px; align-items: end; }
+    .silver-rate-grid .field-group { margin: 0; }
+    .silver-rate-grid .field-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 500; display: block; margin-bottom: 7px; }
+    .silver-rate-grid input[type=number] { width: 100%; border: 1px solid var(--border); padding: 12px 14px; font-family: 'DM Sans', sans-serif; font-size: 15px; color: var(--charcoal); background: var(--ivory); outline: none; box-sizing: border-box; transition: border-color 0.2s, background 0.2s; }
+    .silver-rate-grid input[type=number]:focus { border-color: #7C9BAF; background: #fff; }
+    .silver-effective-wrap { position: relative; }
+    .silver-effective-wrap .field-label { color: #4A7A95 !important; }
+    #silverEffectiveRate { width: 100%; border: 2px solid #BDD6E3; padding: 12px 14px 12px 36px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; color: #2E5E76; background: #EBF3F8; outline: none; box-sizing: border-box; cursor: default; letter-spacing: 0.02em; }
+    .silver-effective-wrap::before { content: '₹'; position: absolute; left: 13px; bottom: 13px; font-size: 14px; color: #4A7A95; font-weight: 600; pointer-events: none; z-index: 1; }
+    .silver-btn-col { display: flex; flex-direction: column; gap: 8px; }
+    .silver-fetch-btn { background: #EBF3F8; border: 1px solid #BDD6E3; color: #2E5E76; font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; padding: 0 16px; height: 38px; cursor: pointer; white-space: nowrap; transition: background 0.2s, border-color 0.2s; display: flex; align-items: center; gap: 6px; }
+    .silver-fetch-btn:hover { background: #D4E8F2; border-color: #7C9BAF; }
+    .silver-fetch-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .silver-formula-preview { font-size: 12px; color: var(--muted); margin: 18px 0 0 0; padding: 11px 16px; background: var(--ivory); border: 1px solid var(--border); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .silver-formula-preview .formula-part { color: var(--charcoal); font-weight: 500; }
+    .silver-actions-row { display: flex; gap: 10px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+    .silver-toggle-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--charcoal); cursor: pointer; padding: 10px 16px; border: 1px solid var(--border); background: var(--ivory); user-select: none; transition: background 0.2s; }
+    .silver-toggle-label:has(input:checked) { background: #EBF3F8; border-color: #7C9BAF; color: #2E5E76; }
+    .silver-toggle-label input[type=checkbox] { accent-color: #4A7A95; width: 15px; height: 15px; }
+    .silver-updated-at { font-size: 11px; color: var(--muted); margin-left: auto; font-style: italic; }
+    .silver-preview-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; }
+    .silver-preview-table th { background: var(--ivory); padding: 8px 12px; text-align: left; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 500; border-bottom: 1px solid var(--border); }
+    .silver-preview-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--charcoal); }
+    .silver-preview-table tr:last-child td { border-bottom: none; }
+    .price-arrow { color: var(--muted); margin: 0 4px; }
+    .price-new { color: #2A6B3C; font-weight: 600; }
+    .price-up { color: #C0392B; }
+    .silver-preview-empty { font-size: 13px; color: var(--muted); font-style: italic; padding: 16px 0; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
 {% endblock %}
 
@@ -82,6 +118,72 @@
         </div>
         <pre id="aiActionJson" class="ai-json"></pre>
         <button id="aiConfirm" class="btn-primary">Apply Action</button>
+    </div>
+</div>
+
+<!-- SILVER RATE PANEL -->
+<div class="silver-panel">
+    <div class="silver-panel-header">
+        <div>
+            <h2 class="silver-panel-title">Silver Rate Pricing</h2>
+            <p class="silver-panel-sub">Set today's live silver rate and premium. Products with silver pricing enabled will have their prices auto-computed.</p>
+        </div>
+        <span class="silver-panel-badge" id="silverLastUpdated">
+            {% if silver_settings.updated_at %}Last updated {{ silver_settings.updated_at[:16].replace('T',' ') }} UTC{% else %}Not set yet{% endif %}
+        </span>
+    </div>
+
+    <div class="silver-rate-grid">
+        <div class="field-group">
+            <label class="field-label">Live Silver Rate (₹ / kg)</label>
+            <input type="number" id="silverLiveRate" step="100" min="0" placeholder="e.g. 250000" value="{{ silver_settings.live_rate_per_kg | int if silver_settings.live_rate_per_kg else '' }}">
+        </div>
+        <div class="field-group">
+            <label class="field-label">Your Premium (₹ / kg)</label>
+            <input type="number" id="silverPremium" step="100" min="0" placeholder="e.g. 50000" value="{{ silver_settings.premium_per_kg | int if silver_settings.premium_per_kg else '' }}">
+        </div>
+        <div class="field-group silver-effective-wrap">
+            <label class="field-label">Effective Rate (₹ / kg)</label>
+            <input type="text" id="silverEffectiveRate" readonly placeholder="—">
+        </div>
+        <div class="silver-btn-col">
+            <button class="btn-outline" id="silverPreviewBtn" style="white-space:nowrap;height:44px;">Preview Prices</button>
+            <button type="button" id="fetchLiveRateBtn" class="silver-fetch-btn" title="Fetch today's silver rate from live market data">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                Fetch Live Rate
+            </button>
+        </div>
+    </div>
+    <div id="fetchRateStatus" style="display:none;margin-top:10px;font-size:12px;padding:8px 12px;border:1px solid var(--border);"></div>
+
+    <div class="silver-formula-preview">
+        <span>Formula per product:</span>
+        <span class="formula-part">( Live Rate + Premium ) ÷ 1000</span>
+        <span>×</span>
+        <span class="formula-part">Weight (g)</span>
+        <span>×</span>
+        <span class="formula-part">Multiplier</span>
+        <span>+</span>
+        <span class="formula-part">Fixed Addition</span>
+        <span style="margin-left:auto;font-size:11px;">All values set per-product when adding/editing</span>
+    </div>
+
+    <div class="silver-actions-row">
+        <button class="btn-primary" id="silverApplyBtn" style="background:#4A7A95;border-color:#4A7A95;">Apply &amp; Update Prices</button>
+        <button class="btn-outline" id="silverSaveOnlyBtn">Save Rate Only</button>
+        <label class="silver-toggle-label">
+            <input type="checkbox" id="silverAutoUpdate" {% if silver_settings.auto_update %}checked{% endif %}>
+            Auto-update prices daily on page load
+        </label>
+        <span class="silver-updated-at" id="silverUpdatedAt">
+            {% if silver_settings.updated_at %}Rate saved {{ silver_settings.updated_at[:16].replace('T',' ') }} UTC{% endif %}
+        </span>
+    </div>
+
+    <!-- Preview Table -->
+    <div id="silverPreviewSection" style="display:none;">
+        <div style="font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-top:24px;margin-bottom:10px;font-weight:500;">Affected Products Preview</div>
+        <div id="silverPreviewBody"></div>
     </div>
 </div>
 
@@ -201,6 +303,146 @@
         const data = await res.json();
         if (data.error) { alert(`Error: ${data.error}`); }
         else { alert(`Updated ${data.updated} product(s) successfully.`); location.reload(); }
+    });
+    // ── SILVER RATE PANEL ──
+    const silverLiveRate   = document.getElementById('silverLiveRate');
+    const silverPremium    = document.getElementById('silverPremium');
+    const silverEffective  = document.getElementById('silverEffectiveRate');
+
+    function updateEffectiveRate() {
+        const live = parseFloat(silverLiveRate.value);
+        const prem = parseFloat(silverPremium.value) || 0;
+        if (!isNaN(live) && silverLiveRate.value.trim() !== '') {
+            silverEffective.value = (live + prem).toLocaleString('en-IN');
+        } else {
+            silverEffective.value = '';
+        }
+    }
+    silverLiveRate.addEventListener('input', updateEffectiveRate);
+    silverPremium.addEventListener('input', updateEffectiveRate);
+    updateEffectiveRate();
+
+    function fmt(n) { return '₹' + parseFloat(n).toLocaleString('en-IN', {maximumFractionDigits:0}); }
+
+    async function silverPreview() {
+        const live = parseFloat(silverLiveRate.value);
+        const prem = parseFloat(silverPremium.value) || 0;
+        if (!live) { alert('Enter a live silver rate first.'); return; }
+        const btn = document.getElementById('silverPreviewBtn');
+        btn.textContent = 'Loading…'; btn.disabled = true;
+        try {
+            const res = await fetch('/admin/silver-rate/preview', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({live_rate_per_kg: live, premium_per_kg: prem})
+            });
+            const data = await res.json();
+            const section = document.getElementById('silverPreviewSection');
+            const body    = document.getElementById('silverPreviewBody');
+            section.style.display = 'block';
+            if (!data.products || data.products.length === 0) {
+                body.innerHTML = '<div class="silver-preview-empty">No products have silver pricing enabled yet. Enable it per-product when adding or editing.</div>';
+                return;
+            }
+            let rows = data.products.map(p => {
+                const diff = p.new_price - p.current_price;
+                const diffHtml = diff === 0 ? '' :
+                    `<span class="${diff > 0 ? 'price-up' : 'price-new'}" style="font-size:11px;margin-left:4px;">(${diff > 0 ? '+' : ''}${fmt(diff)})</span>`;
+                return `<tr>
+                    <td>${p.name}</td>
+                    <td style="color:var(--muted);">${p.category}</td>
+                    <td>${p.weight_grams}g</td>
+                    <td style="font-size:11px;color:var(--muted);">×${p.multiplier}</td>
+                    <td style="color:var(--muted);text-decoration:line-through;">${fmt(p.current_price)}</td>
+                    <td class="price-new">${fmt(p.new_price)}${diffHtml}</td>
+                </tr>`;
+            }).join('');
+            body.innerHTML = `<table class="silver-preview-table">
+                <thead><tr><th>Product</th><th>Category</th><th>Weight</th><th>Multiplier</th><th>Current Price</th><th>New Price</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+        } catch(e) { alert('Preview failed: ' + e.message); }
+        finally { btn.textContent = 'Preview Prices'; btn.disabled = false; }
+    }
+
+    async function silverSave(applyPrices) {
+        const live = parseFloat(silverLiveRate.value);
+        const prem = parseFloat(silverPremium.value) || 0;
+        if (!live) { alert('Enter a live silver rate first.'); return; }
+        const autoUpdate = document.getElementById('silverAutoUpdate').checked;
+        const btnId = applyPrices ? 'silverApplyBtn' : 'silverSaveOnlyBtn';
+        const btn = document.getElementById(btnId);
+        const origText = btn.textContent;
+        btn.textContent = 'Saving…'; btn.disabled = true;
+        try {
+            const payload = {live_rate_per_kg: live, premium_per_kg: prem, auto_update: applyPrices};
+            const res = await fetch('/admin/silver-rate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.error) { alert('Error: ' + data.error); return; }
+            const now = new Date().toISOString().slice(0,16).replace('T',' ');
+            document.getElementById('silverUpdatedAt').textContent = `Rate saved ${now} UTC`;
+            document.getElementById('silverLastUpdated').textContent = `Last updated ${now} UTC`;
+            if (applyPrices) {
+                alert(`✓ Prices updated for ${data.updated_products} product(s).`);
+                location.reload();
+            } else {
+                alert(`✓ Silver rate saved. Prices not changed.`);
+            }
+        } catch(e) { alert('Failed: ' + e.message); }
+        finally { btn.textContent = origText; btn.disabled = false; }
+    }
+
+    document.getElementById('silverPreviewBtn').addEventListener('click', silverPreview);
+    document.getElementById('silverApplyBtn').addEventListener('click', () => silverSave(true));
+    document.getElementById('silverSaveOnlyBtn').addEventListener('click', () => silverSave(false));
+
+    // Auto-update on page load if setting is enabled
+    (async function checkAutoUpdate() {
+        try {
+            const res = await fetch('/admin/silver-rate');
+            const data = await res.json();
+            if (data.auto_update && data.live_rate_per_kg) {
+                // Silently recompute prices; no alert needed
+                await fetch('/admin/silver-rate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({live_rate_per_kg: data.live_rate_per_kg, premium_per_kg: data.premium_per_kg || 0, auto_update: true})
+                });
+            }
+        } catch(e) {}
+    })();
+
+    // ── FETCH LIVE SILVER RATE ──
+    document.getElementById('fetchLiveRateBtn').addEventListener('click', async () => {
+        const btn = document.getElementById('fetchLiveRateBtn');
+        const status = document.getElementById('fetchRateStatus');
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Fetching…';
+        btn.disabled = true;
+        status.style.display = 'block';
+        status.style.background = '#EBF3F8'; status.style.borderColor = '#BDD6E3'; status.style.color = '#2E5E76';
+        status.textContent = 'Fetching live silver rate from market data…';
+        try {
+            const res = await fetch('/admin/silver-rate/fetch-live');
+            const data = await res.json();
+            if (data.error) {
+                status.style.background = '#FDF0F0'; status.style.borderColor = '#F5C0C0'; status.style.color = '#C0392B';
+                status.textContent = '⚠ ' + data.error;
+            } else {
+                silverLiveRate.value = Math.round(data.rate_per_kg);
+                updateEffectiveRate();
+                status.style.background = '#F0FBF4'; status.style.borderColor = '#A8D8B8'; status.style.color = '#2A6B3C';
+                status.textContent = `✓ Fetched: ₹${parseFloat(data.rate_per_kg).toLocaleString('en-IN')} / kg  (source: ${data.source}, ${data.timestamp})`;
+            }
+        } catch(e) {
+            status.style.background = '#FDF0F0'; status.style.borderColor = '#F5C0C0'; status.style.color = '#C0392B';
+            status.textContent = '⚠ Failed to fetch: ' + e.message;
+        }
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Fetch Live Rate';
+        btn.disabled = false;
     });
 </script>
 {% endblock %}
