@@ -754,13 +754,17 @@ def admin_logout():
 def admin_dashboard():
     # Pass all categories; template will group by parent_id
     categories = Category.query.options(joinedload(Category.products)).filter_by(parent_id=None).all()
+    # Products with no category assigned — always accessible regardless of category state
+    uncategorised_products = Product.query.filter_by(category_id=None).order_by(Product.name).all()
     silver_settings = {
         'live_rate_per_kg': Settings.get('silver_live_rate_per_kg', 0) or 0,
         'premium_per_kg':   Settings.get('silver_premium_per_kg',   0) or 0,
         'auto_update':      Settings.get('silver_auto_update',       False),
         'updated_at':       Settings.get('silver_rate_updated_at',   None),
     }
-    return render_template('admin/dashboard.html', categories=categories, silver_settings=silver_settings)
+    return render_template('admin/dashboard.html', categories=categories,
+                           uncategorised_products=uncategorised_products,
+                           silver_settings=silver_settings)
 
 @app.route('/admin/product/new', methods=['GET', 'POST'])
 @app.route('/admin/product/<int:id>/edit', methods=['GET', 'POST'])

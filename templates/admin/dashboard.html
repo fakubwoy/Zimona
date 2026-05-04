@@ -51,6 +51,15 @@
     .empty-category { padding: 32px; text-align: center; font-size: 13px; color: var(--muted); font-style: italic; border-top: 1px solid var(--border); }
     .inline { display: inline; }
 
+    /* UNCATEGORISED PRODUCTS SECTION */
+    .uncat-section { margin-top: 40px; border: 2px dashed var(--border); background: #fff; }
+    .uncat-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid var(--border); background: var(--ivory); }
+    .uncat-header-left { display: flex; align-items: center; gap: 12px; }
+    .uncat-badge { background: var(--maroon); color: #fff; font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 3px 10px; border-radius: 2px; }
+    .uncat-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; color: var(--charcoal); }
+    .uncat-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .uncat-count { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
     /* SILVER RATE PANEL */
     .silver-panel { background: #fff; border: 1px solid var(--border); border-left: 4px solid #7C9BAF; padding: 32px; margin-bottom: 40px; }
     .silver-panel-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
@@ -258,6 +267,60 @@
     </div>
 </div>
 {% endfor %}
+
+{# ── UNCATEGORISED PRODUCTS ── Always shown so the admin can manage any orphaned product #}
+{% if uncategorised_products %}
+<div class="uncat-section">
+    <div class="uncat-header">
+        <div class="uncat-header-left">
+            <span class="uncat-badge">Uncategorised</span>
+            <div>
+                <div class="uncat-title">Products Without a Category</div>
+                <div class="uncat-sub">These products are not attached to any category. Assign a category or edit/delete them directly.</div>
+            </div>
+        </div>
+        <span class="uncat-count">{{ uncategorised_products|length }} product{{ 's' if uncategorised_products|length != 1 else '' }}</span>
+    </div>
+    <table class="product-table">
+        <thead>
+            <tr>
+                <th>Image</th>
+                <th>Name</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in uncategorised_products %}
+            <tr>
+                <td>
+                    {% if p.images %}
+                    <img src="/uploads/{{ p.images[0] }}" class="product-thumbnail" alt="{{ p.name }}">
+                    {% else %}
+                    <div class="thumb-placeholder">◇</div>
+                    {% endif %}
+                </td>
+                <td class="product-name-cell">{{ p.name }}</td>
+                <td class="product-price-cell">₹{{ "{:,.0f}".format(p.price) }}</td>
+                <td>
+                    <span style="font-size:11px;font-weight:500;color:{% if p.is_in_stock %}#2A6B3C{% else %}#C0392B{% endif %};">
+                        {{ 'In Stock' if p.is_in_stock else 'Out of Stock' }}
+                    </span>
+                </td>
+                <td>
+                    <a href="/admin/product/{{ p.id }}/edit" class="table-action-link">Edit</a>
+                    <form action="/admin/product/{{ p.id }}/delete" method="POST" class="inline"
+                          onsubmit="return confirm('Delete {{ p.name }}?')">
+                        <button class="table-action-delete">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
