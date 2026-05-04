@@ -220,7 +220,7 @@
                     <td class="product-price-cell">₹{{ "{:,.0f}".format(p.price) }}</td>
                     <td>
                         <a href="/admin/product/{{ p.id }}/edit" class="table-action-link">Edit</a>
-                        <form action="/admin/product/{{ p.id }}/delete" method="POST" class="inline" onsubmit="return confirm('Delete {{ p.name }}?')">
+                        <form action="/admin/product/{{ p.id }}/delete" method="POST" class="inline">
                             <button class="table-action-delete">Delete</button>
                         </form>
                     </td>
@@ -251,7 +251,7 @@
                             <td class="product-price-cell">₹{{ "{:,.0f}".format(p.price) }}</td>
                             <td>
                                 <a href="/admin/product/{{ p.id }}/edit" class="table-action-link">Edit</a>
-                                <form action="/admin/product/{{ p.id }}/delete" method="POST" class="inline" onsubmit="return confirm('Delete {{ p.name }}?')">
+                                <form action="/admin/product/{{ p.id }}/delete" method="POST" class="inline">
                                     <button class="table-action-delete">Delete</button>
                                 </form>
                             </td>
@@ -311,7 +311,7 @@
                 <td>
                     <a href="/admin/product/{{ p.id }}/edit" class="table-action-link">Edit</a>
                     <form action="/admin/product/{{ p.id }}/delete" method="POST" class="inline"
-                          onsubmit="return confirm('Delete {{ p.name }}?')">
+                         >
                         <button class="table-action-delete">Delete</button>
                     </form>
                 </td>
@@ -325,6 +325,41 @@
 
 {% block scripts %}
 <script>
+    // ── AJAX DELETE: remove row without scrolling ──
+    document.addEventListener('click', async function(e) {
+        const btn = e.target.closest('.table-action-delete');
+        if (!btn) return;
+        e.preventDefault();
+        const form = btn.closest('form');
+        const productName = form.closest('tr')?.querySelector('.product-name-cell')?.textContent?.trim() || 'this product';
+        if (!confirm(`Delete ${productName}?`)) return;
+        try {
+            const res = await fetch(form.action, { method: 'POST' });
+            if (res.ok || res.redirected) {
+                const row = form.closest('tr');
+                if (row) {
+                    row.style.transition = 'opacity 0.2s';
+                    row.style.opacity = '0';
+                    setTimeout(() => {
+                        row.remove();
+                        // Update the count badge in the category toggle header
+                        document.querySelectorAll('.category-toggle').forEach(toggle => {
+                            const content = document.getElementById(`category-${toggle.dataset.categoryId}-content`);
+                            if (!content) return;
+                            const count = content.querySelectorAll('.product-table tbody tr').length;
+                            const badge = toggle.querySelector('.cat-toggle-count');
+                            if (badge) badge.textContent = `${count} piece${count !== 1 ? 's' : ''}`;
+                        });
+                    }, 200);
+                }
+            } else {
+                alert('Delete failed. Please try again.');
+            }
+        } catch(err) {
+            alert('Delete failed: ' + err.message);
+        }
+    });
+
     document.querySelectorAll('.category-toggle').forEach(toggle => {
         toggle.addEventListener('click', function() {
             const id = this.dataset.categoryId;
