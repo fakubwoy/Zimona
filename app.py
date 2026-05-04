@@ -15,7 +15,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/jewellery')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB — client-side pre-compression keeps typical uploads well under this
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'webp'}
 
 db = SQLAlchemy(app)
@@ -31,6 +31,14 @@ def login_required(f):
             return redirect(url_for('admin_login', next=request.path))
         return f(*args, **kwargs)
     return decorated
+
+@app.errorhandler(413)
+def request_entity_too_large(e):
+    from flask import jsonify, request as _req
+    if _req.path.startswith('/admin'):
+        flash('Image is too large (max 50 MB). Please use a smaller file.', 'warning')
+        return redirect(_req.referrer or url_for('admin_dashboard')), 303
+    return jsonify({'error': 'File too large. Maximum upload size is 50 MB.'}), 413
 model = genai.GenerativeModel('gemini-2.5-pro')  # Auto-selects latest stable version
 
 # ---------- Context Processor ----------

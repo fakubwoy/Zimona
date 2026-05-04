@@ -178,7 +178,7 @@
                 </div>
                 <label class="image-upload-label" for="imageUpload">
                     <span class="image-upload-icon">◇</span>
-                    <span class="image-upload-text">Click to upload · PNG, JPG, WEBP · Max 16MB</span>
+                    <span class="image-upload-text">Click to upload · PNG, JPG, WEBP · Auto-compressed</span>
                 </label>
                 <input type="file" id="imageUpload" name="images" multiple accept="image/*" style="display:none;">
                 <!-- Single unified drag-sortable grid for existing + new images -->
@@ -533,22 +533,57 @@
         dragSrcIndex = null;
     }
 
-    // Handle new file uploads – store the File object inside the slot
-    fileInput.addEventListener('change', function() {
-        Array.from(this.files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = e => {
-                imageSlots.push({
-                    type: 'new',
-                    filename: file.name,
-                    src: e.target.result,
-                    file: file        // <-- store the actual File object
-                });
-                renderGrid();
+    // ── Client-side image compression ──────────────────────────────
+    // Resizes to max 1800px on either axis and re-encodes as JPEG @ 85%
+    // before the file ever leaves the browser, preventing 413 errors.
+    function compressImage(file, maxDim, quality) {
+        return new Promise(resolve => {
+            // If already small enough, skip compression
+            if (file.size < 300 * 1024) { resolve(file); return; }
+            const img = new window.Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                let { width, height } = img;
+                if (width <= maxDim && height <= maxDim && file.size < 1.5 * 1024 * 1024) {
+                    resolve(file); return;
+                }
+                const scale = Math.min(1, maxDim / Math.max(width, height));
+                const canvas = document.createElement('canvas');
+                canvas.width  = Math.round(width  * scale);
+                canvas.height = Math.round(height * scale);
+                canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                canvas.toBlob(blob => {
+                    if (!blob) { resolve(file); return; }
+                    // Keep .jpg extension; server converts to .webp anyway
+                    const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+                    resolve(compressed);
+                }, 'image/jpeg', quality);
             };
-            reader.readAsDataURL(file);
+            img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+            img.src = url;
         });
+    }
+
+    // Handle new file uploads – compress then store the File object inside the slot
+    fileInput.addEventListener('change', function() {
+        const files = Array.from(this.files);
         this.value = ''; // allow re-upload of same file if needed
+        files.forEach(file => {
+            compressImage(file, 1800, 0.85).then(compressed => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    imageSlots.push({
+                        type: 'new',
+                        filename: compressed.name,
+                        src: e.target.result,
+                        file: compressed   // store compressed File
+                    });
+                    renderGrid();
+                };
+                reader.readAsDataURL(compressed);
+            });
+        });
     });
 
     // On form submit, rebuild the file input's files from ordered slots
