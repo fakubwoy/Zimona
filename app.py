@@ -7,12 +7,21 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import or_, and_, func
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
-import google.generativeai as genai
+from google import genai
 
 # ---------- App & Config ----------
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-me')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/jewellery')
+_db_url = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@localhost:5432/jewellery')
+# Railway (and most managed PG providers) require SSL; add sslmode only when connecting
+# to a remote host (i.e. not a local docker-compose db).
+_is_local = 'localhost' in _db_url or '@db:' in _db_url
+app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {} if _is_local else {
+    'connect_args': {'sslmode': 'require'},
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+}
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB — client-side pre-compression keeps typical uploads well under this
@@ -21,7 +30,7 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'webp'}
 os.makedirs(os.path.join('static', 'uploads', 'categories'), exist_ok=True)
 
 db = SQLAlchemy(app)
-genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+_genai_client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
 
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'changeme')
@@ -41,7 +50,7 @@ def request_entity_too_large(e):
         flash('Image is too large (max 50 MB). Please use a smaller file.', 'warning')
         return redirect(_req.referrer or url_for('admin_dashboard')), 303
     return jsonify({'error': 'File too large. Maximum upload size is 50 MB.'}), 413
-model = genai.GenerativeModel('gemini-2.5-pro')  # Auto-selects latest stable version
+_GEMINI_MODEL = 'gemini-2.5-pro'  # Model used for all AI features
 
 # ---------- Context Processor ----------
 @app.context_processor
@@ -1237,7 +1246,7 @@ def ai_seo():
     desc = data.get('desc', '')
     prompt = f"""Generate SEO for jewellery: name="{name}", desc="{desc}". Output JSON with keys: meta_title(max60), meta_description(max160), meta_keywords(comma), tags(comma), synonyms(comma). Only JSON."""
     try:
-        resp = model.generate_content(prompt, generation_config={"temperature":0.2})
+        resp = _genai_client.models.generate_content(model=_GEMINI_MODEL, contents=prompt, config={"temperature":0.2})
         text = resp.text.strip().replace('```json','').replace('```','')
         seo = json.loads(text)
         return jsonify(seo)
@@ -1262,7 +1271,7 @@ Examples:
 
 Only JSON, no explanation."""
     try:
-        resp = model.generate_content(prompt, generation_config={"temperature":0.0})
+        resp = _genai_client.models.generate_content(model=_GEMINI_MODEL, contents=prompt, config={"temperature":0.0})
         text = resp.text.strip().replace('```json','').replace('```','')
         action = json.loads(text)
         return jsonify(action)

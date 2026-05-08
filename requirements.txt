@@ -2,6 +2,6 @@ flask
 flask-sqlalchemy
 psycopg2-binary
 pillow
-google-generativeai
+google-genai
 gunicorn
 requests
