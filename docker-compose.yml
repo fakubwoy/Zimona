@@ -6,7 +6,9 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./static/uploads:/app/static/uploads
+      # Named volume keeps uploads between local rebuilds,
+      # matching how Railway's persistent volume works.
+      - uploads_data:/app/static/uploads
     environment:
       - SECRET_KEY=${SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
@@ -27,3 +29,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

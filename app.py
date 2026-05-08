@@ -991,14 +991,17 @@ def admin_category_upload_image(id):
         ext = f.filename.rsplit('.', 1)[1].lower()
         filename = f"cat_{secrets.token_hex(6)}.{ext}"
 
-        # FIX: Save into the static/uploads/categories folder which is backed by the Docker Volume
+        # Save into static/uploads/categories — this folder lives inside the
+        # Docker volume so images survive container redeploys.
         cat_upload_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'categories')
         os.makedirs(cat_upload_dir, exist_ok=True)
 
         filepath = os.path.join(cat_upload_dir, filename)
         f.save(filepath)
-        compress_image(filepath)
-        cat.image = filename
+        webp_path = compress_image(filepath)
+        # Store just the bare filename (no path prefix).
+        # The route /assets/categories/<filename> serves from this same folder.
+        cat.image = os.path.basename(webp_path)
         db.session.commit()
         flash('Category image updated.', 'success')
     else:
@@ -1385,7 +1388,6 @@ with app.app_context():
         except Exception:
             conn.rollback()
     Category.seed_defaults()
-    Category.seed_gifts()
     seed_sample_products()
 
 if __name__ == '__main__':

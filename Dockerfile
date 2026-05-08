@@ -7,7 +7,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN mkdir -p static/uploads
+# Ensure uploads dir exists at build time; on Railway this gets shadowed
+# by the mounted volume so build-time contents don't matter.
+RUN mkdir -p static/uploads/categories
 
 EXPOSE 80
-CMD ["python", "app.py"]
+
+# Use gunicorn in production. Workers=2 keeps RAM low on Railway's free tier.
+CMD ["gunicorn", "--bind", "0.0.0.0:80", "--workers", "2", "--timeout", "120", "app:app"]
