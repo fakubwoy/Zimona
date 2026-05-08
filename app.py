@@ -18,6 +18,8 @@ app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB — client-side pre-compression keeps typical uploads well under this
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'webp'}
 
+os.makedirs(os.path.join('static', 'uploads', 'categories'), exist_ok=True)
+
 db = SQLAlchemy(app)
 genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
 
@@ -1331,88 +1333,64 @@ def assets_file(filename):
     return send_from_directory(os.path.join('templates', 'assets'), filename)
 
 # ---------- DB Init ----------
-# Use a file lock so only one gunicorn worker runs migrations/seeding.
-# Other workers wait and then skip (tables already exist).
-import fcntl
-
-def _run_db_init():
-    """Run DB migrations and seeding. Called once per process startup, protected by file lock."""
-    # 1. Wait for DB to be ready
+with app.app_context():
     retries = 10
     while retries > 0:
         try:
-            with db.engine.connect() as _c:
-                _c.execute(db.text("SELECT 1"))
+            db.engine.connect()
             break
         except Exception as e:
             retries -= 1
             if retries == 0:
-                raise RuntimeError(f"Database not reachable after retries: {e}")
-            print(f"[DB] Waiting for database... ({10 - retries}/10)", flush=True)
+                raise e
             time.sleep(3)
-
-    # 2. Create tables
     db.create_all()
-
-    # 3. Run migrations — each in its own transaction so one failure doesn't block others
-    migrations = [
-        "ALTER TABLE category ADD COLUMN IF NOT EXISTS image VARCHAR(200)",
-        "ALTER TABLE category ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES category(id)",
-        "ALTER TABLE category ADD COLUMN IF NOT EXISTS description TEXT",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS color VARCHAR(200)",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS buying_for VARCHAR(200)",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS is_in_stock BOOLEAN NOT NULL DEFAULT TRUE",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_value NUMERIC(3,2) DEFAULT NULL",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_count INTEGER DEFAULT 0",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_pricing_enabled BOOLEAN NOT NULL DEFAULT FALSE",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_weight_grams NUMERIC(8,3)",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_multiplier NUMERIC(6,4)",
-        "ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_fixed_addition NUMERIC(10,2)",
-    ]
-    for sql in migrations:
-        with db.engine.connect() as conn:
-            try:
-                conn.execute(db.text(sql))
-                conn.commit()
-            except Exception:
-                conn.rollback()
-
-    # 4. Seed
-    try:
-        Category.seed_defaults()
-    except Exception as e:
-        print(f"[WARN] seed_defaults failed: {e}", flush=True)
-    try:
-        Category.seed_gifts()
-    except Exception as e:
-        print(f"[WARN] seed_gifts failed: {e}", flush=True)
-    try:
-        seed_sample_products()
-    except Exception as e:
-        print(f"[WARN] seed_sample_products failed: {e}", flush=True)
-
-    print("[DB] Initialisation complete.", flush=True)
-
-
-with app.app_context():
-    _lock_path = "/tmp/jewellery_db_init.lock"
-    try:
-        with open(_lock_path, "w") as _lock_file:
-            # Non-blocking try — if another worker holds it, skip (they're doing the work)
-            try:
-                fcntl.flock(_lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                _run_db_init()
-                fcntl.flock(_lock_file, fcntl.LOCK_UN)
-            except BlockingIOError:
-                # Another worker is running init — wait for it to finish, then continue
-                print("[DB] Another worker is initialising DB, waiting...", flush=True)
-                fcntl.flock(_lock_file, fcntl.LOCK_SH)  # blocks until exclusive lock released
-                fcntl.flock(_lock_file, fcntl.LOCK_UN)
-                print("[DB] DB init done by other worker, continuing.", flush=True)
-    except Exception as e:
-        # Never crash gunicorn workers over DB init — log and continue
-        print(f"[ERROR] DB init failed: {e}", flush=True)
+    # Migration: add columns that may be missing from older DB schemas
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE category ADD COLUMN IF NOT EXISTS image VARCHAR(200)"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE category ADD COLUMN IF NOT EXISTS parent_id INTEGER REFERENCES category(id)"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS color VARCHAR(200)"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS buying_for VARCHAR(200)"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS is_in_stock BOOLEAN NOT NULL DEFAULT TRUE"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE category ADD COLUMN IF NOT EXISTS description TEXT"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_value NUMERIC(3,2) DEFAULT NULL"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_count INTEGER DEFAULT 0"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    with db.engine.connect() as conn:
+        try:
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_pricing_enabled BOOLEAN NOT NULL DEFAULT FALSE"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_weight_grams NUMERIC(8,3)"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_multiplier NUMERIC(6,4)"))
+            conn.execute(db.text("ALTER TABLE product ADD COLUMN IF NOT EXISTS silver_fixed_addition NUMERIC(10,2)"))
+            conn.commit()
+        except Exception:
+            conn.rollback()
+    Category.seed_defaults()
+    seed_sample_products()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 80)), debug=os.environ.get('FLASK_ENV') != 'production')
