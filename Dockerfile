@@ -11,7 +11,7 @@ COPY . .
 # by the mounted volume so build-time contents don't matter.
 RUN mkdir -p static/uploads/categories
 
-EXPOSE 80
+EXPOSE 8080
 
 # Use gunicorn in production. Workers=2 keeps RAM low on Railway's free tier.
-CMD ["gunicorn", "--bind", "0.0.0.0:80", "--workers", "2", "--timeout", "120", "--preload", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "2", "--timeout", "120", "--preload", "app:app"]
