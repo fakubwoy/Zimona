@@ -1,0 +1,504 @@
+{% extends "wholesale/base.html" %}
+{% block title %}Trade Catalog – Zimona Wholesale{% endblock %}
+
+{% block extra_styles %}
+/* ── LAYOUT ── */
+.catalog-layout {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 40px;
+    align-items: start;
+}
+
+/* ── SIDEBAR ── */
+.sidebar { position: sticky; top: 100px; max-height: calc(100vh - 120px); overflow-y: auto; }
+.sidebar::-webkit-scrollbar { width: 3px; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); }
+.sidebar-section { background: #fff; border: 1px solid var(--border); margin-bottom: 14px; }
+.sidebar-head {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px; font-weight: 600; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--charcoal);
+}
+.sidebar-body { padding: 8px 0 12px; }
+
+/* category nav links — jump anchors */
+.cat-link {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; color: var(--charcoal); text-decoration: none;
+    padding: 8px 18px; transition: background 0.15s, color 0.15s;
+    border-left: 3px solid transparent;
+}
+.cat-link:hover { background: var(--ivory); color: var(--maroon); border-left-color: var(--maroon); }
+.cat-link.active { color: var(--maroon); font-weight: 600; border-left-color: var(--maroon); background: rgba(107,26,26,0.04); }
+.cat-count { font-size: 11px; color: var(--muted); background: var(--ivory); padding: 2px 7px; border: 1px solid var(--border); }
+
+/* sort + filter */
+.filter-row { margin-bottom: 10px; padding: 0 18px; }
+.filter-row label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--charcoal); cursor: pointer; }
+.filter-row input[type="checkbox"] { accent-color: var(--maroon); width: 14px; height: 14px; }
+.sort-select {
+    width: 100%; border: 1px solid var(--border); background: var(--cream);
+    padding: 9px 12px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    color: var(--charcoal); outline: none; cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B1A1A' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px;
+}
+.sort-select:focus { border-color: var(--maroon); }
+
+/* ── PAGE HEADER ── */
+.catalog-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid var(--maroon);
+}
+.catalog-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; }
+.catalog-eyebrow { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--maroon); font-weight: 500; margin-bottom: 6px; }
+.catalog-count { font-size: 13px; color: var(--muted); text-align: right; }
+.catalog-count strong { font-size: 22px; font-family: 'Playfair Display', serif; color: var(--charcoal); display: block; }
+
+/* ── INFO STRIP ── */
+.info-strip {
+    background: #fff; border: 1px solid var(--border);
+    border-left: 3px solid var(--charcoal);
+    padding: 11px 20px; margin-bottom: 36px;
+    display: flex; gap: 28px; flex-wrap: wrap; font-size: 12px; color: var(--muted);
+}
+
+/* ── CATEGORY SECTION ── */
+.cat-section { margin-bottom: 52px; scroll-margin-top: 110px; }
+.cat-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 14px; margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+}
+.cat-section-header::before {
+    content: '';
+    position: absolute; bottom: -1px; left: 0;
+    width: 48px; height: 2px; background: var(--maroon);
+}
+.cat-section-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px; font-weight: 700; color: var(--charcoal);
+    display: flex; align-items: center; gap: 12px;
+}
+.cat-section-pill {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; background: var(--ivory);
+    border: 1px solid var(--border); color: var(--muted);
+    padding: 4px 10px; font-family: 'DM Sans', sans-serif;
+}
+.cat-section-link {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--maroon); text-decoration: none;
+    border: 1px solid var(--maroon); padding: 7px 16px;
+    transition: background 0.2s, color 0.2s; white-space: nowrap;
+}
+.cat-section-link:hover { background: var(--maroon); color: #fff; }
+
+/* ── PRODUCT GRID ── */
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 18px;
+}
+
+/* ── PRODUCT CARD ── */
+.product-card {
+    background: #fff; border: 1px solid var(--border);
+    transition: box-shadow 0.2s, transform 0.2s;
+    display: flex; flex-direction: column;
+}
+.product-card:hover {
+    box-shadow: 0 6px 28px rgba(107,26,26,0.1);
+    transform: translateY(-2px);
+}
+
+/* image */
+.card-img-wrap {
+    position: relative; aspect-ratio: 1;
+    overflow: hidden; background: var(--ivory);
+    display: block; flex-shrink: 0; text-decoration: none;
+}
+.card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; display: block; }
+.product-card:hover .card-img { transform: scale(1.04); }
+.card-no-img {
+    width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+    font-size: 40px; color: var(--border); font-family: 'Playfair Display', serif;
+    text-decoration: none; line-height: 1;
+}
+
+/* badges — inside image wrap */
+.stock-badge {
+    position: absolute; top: 8px; left: 8px; z-index: 2;
+    font-size: 9px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 3px 8px; pointer-events: none;
+    font-family: 'DM Sans', sans-serif;
+}
+.stock-badge.in  { background: #2A6B3C; color: #fff; }
+.stock-badge.out { background: #C0392B; color: #fff; }
+.wt-overlay {
+    position: absolute; bottom: 8px; right: 8px; z-index: 2;
+    background: rgba(28,26,26,0.85); color: #fff;
+    font-size: 11px; font-weight: 600; padding: 4px 10px;
+    letter-spacing: 0.04em; pointer-events: none;
+    font-family: 'DM Sans', sans-serif;
+}
+
+/* card body */
+.card-body { padding: 13px 14px 14px; display: flex; flex-direction: column; flex: 1; }
+.card-sku { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 4px; font-family: 'DM Sans', sans-serif; }
+.card-name {
+    font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600;
+    color: var(--charcoal); line-height: 1.3; margin-bottom: 8px;
+    text-decoration: none; display: block;
+}
+.card-name:hover { color: var(--maroon); }
+
+/* weight row — prominent */
+.card-weight-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; background: var(--ivory);
+    border: 1px solid var(--border); margin-bottom: 10px;
+}
+.card-weight-label { font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.card-weight-val { font-size: 14px; font-weight: 700; color: var(--charcoal); font-family: 'Playfair Display', serif; }
+.card-weight-unit { font-size: 10px; color: var(--muted); }
+
+/* specs */
+.card-specs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.spec-tag {
+    font-size: 10px; background: var(--ivory); border: 1px solid var(--border);
+    padding: 2px 7px; color: var(--charcoal); letter-spacing: 0.02em; line-height: 1.5;
+}
+
+/* card footer */
+.card-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 10px; border-top: 1px solid var(--border); margin-top: auto; gap: 8px;
+}
+.card-price { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--maroon); line-height: 1.1; }
+.card-price-sub { font-size: 10px; color: var(--muted); font-weight: 300; font-family: 'DM Sans', sans-serif; margin-top: 1px; }
+.card-detail-btn {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--maroon); text-decoration: none; border: 1px solid var(--maroon);
+    padding: 6px 10px; white-space: nowrap; transition: background 0.2s, color 0.2s; flex-shrink: 0;
+}
+.card-detail-btn:hover { background: var(--maroon); color: #fff; }
+
+/* empty */
+.empty-state {
+    grid-column: 1/-1; text-align: center; padding: 60px 40px;
+    color: var(--muted); font-style: italic; background: #fff; border: 1px solid var(--border);
+}
+
+/* flat search/filtered view header */
+.flat-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--border);
+}
+.flat-header-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 600; }
+.flat-header-count { font-size: 12px; color: var(--muted); }
+
+/* section divider at bottom of page */
+.catalog-end {
+    text-align: center; padding: 40px 20px; color: var(--muted);
+    font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+    border-top: 1px solid var(--border); margin-top: 20px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="catalog-layout">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="sidebar">
+        <form id="filterForm" action="/wholesale/catalog" method="GET">
+            {% if q %}<input type="hidden" name="q" value="{{ q }}">{% endif %}
+
+            <!-- Category jump links -->
+            <div class="sidebar-section">
+                <div class="sidebar-head">Jump to Category</div>
+                <div class="sidebar-body">
+                    {% if not active_cat and not q %}
+                        <!-- Grouped view: links are anchor jumps -->
+                        <a href="/wholesale/catalog" class="cat-link active">
+                            All &nbsp;<span class="cat-count">{{ total }}</span>
+                        </a>
+                        {% for cat in categories %}
+                        <a href="#cat-{{ cat.id }}" class="cat-link js-anchor">
+                            {{ cat.name }}
+                            <span class="cat-count">
+                                {{ cat.products|length + cat.subcategories.all()|map(attribute='products')|map('list')|map('length')|sum }}
+                            </span>
+                        </a>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Filtered view: links reload -->
+                        <a href="/wholesale/catalog" class="cat-link {% if not active_cat %}active{% endif %}">
+                            All <span class="cat-count">{{ total }}</span>
+                        </a>
+                        {% for cat in categories %}
+                        <a href="/wholesale/catalog?cat={{ cat.id }}" class="cat-link {% if active_cat and active_cat.id == cat.id %}active{% endif %}">
+                            {{ cat.name }}
+                            <span class="cat-count">
+                                {{ cat.products|length + cat.subcategories.all()|map(attribute='products')|map('list')|map('length')|sum }}
+                            </span>
+                        </a>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sort -->
+            <div class="sidebar-section">
+                <div class="sidebar-head">Sort By</div>
+                <div class="sidebar-body" style="padding:10px 18px 14px;">
+                    <select name="sort" class="sort-select"
+                            onchange="document.getElementById('filterForm').submit()">
+                        <option value="featured"    {% if sort_by=='featured'    %}selected{% endif %}>Featured</option>
+                        <option value="weight_asc"  {% if sort_by=='weight_asc'  %}selected{% endif %}>Weight: Low → High</option>
+                        <option value="weight_desc" {% if sort_by=='weight_desc' %}selected{% endif %}>Weight: High → Low</option>
+                        <option value="price_asc"   {% if sort_by=='price_asc'   %}selected{% endif %}>Price: Low → High</option>
+                        <option value="price_desc"  {% if sort_by=='price_desc'  %}selected{% endif %}>Price: High → Low</option>
+                        <option value="name_asc"    {% if sort_by=='name_asc'    %}selected{% endif %}>Name A → Z</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="sidebar-section">
+                <div class="sidebar-head">Filters</div>
+                <div class="sidebar-body" style="padding-top:12px;">
+                    <div class="filter-row">
+                        <label>
+                            <input type="checkbox" name="in_stock" value="1"
+                                   {% if in_stock_only %}checked{% endif %}
+                                   onchange="document.getElementById('filterForm').submit()">
+                            In Stock Only
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            {% if active_cat %}
+            <input type="hidden" name="cat" value="{{ active_cat.id }}">
+            {% endif %}
+        </form>
+    </aside>
+
+    <!-- ── MAIN ── -->
+    <main>
+        <!-- Page header -->
+        <div class="catalog-header">
+            <div>
+                <div class="catalog-eyebrow">Zimona Trade Portal</div>
+                <h1 class="catalog-title">
+                    {% if active_cat %}{{ active_cat.name }}
+                    {% elif q %}Search Results
+                    {% else %}Trade Catalog{% endif %}
+                </h1>
+            </div>
+            <div class="catalog-count">
+                <strong>{{ total }}</strong>
+                item{% if total != 1 %}s{% endif %}
+                {% if active_cat %} in {{ active_cat.name }}{% endif %}
+                {% if q %} for "<em>{{ q }}</em>"{% endif %}
+            </div>
+        </div>
+
+        <!-- Info strip -->
+        <div class="info-strip">
+            <span>⚖️ <strong style="color:var(--charcoal);">Weight</strong> = net silver grams</span>
+            <span>🔖 Prices are <strong style="color:var(--charcoal);">MRP</strong> — ask for trade rate</span>
+            <span>📋 Click any item for full specs</span>
+        </div>
+
+        <!-- ══════════════════════════════════════
+             GROUPED VIEW (default — no cat filter, no search)
+        ══════════════════════════════════════ -->
+        {% if grouped_products %}
+
+            {% for group in grouped_products %}
+            {% if group.products %}
+            <section class="cat-section" id="cat-{{ group.cat_id }}">
+                <div class="cat-section-header">
+                    <div class="cat-section-name">
+                        {{ group.cat_name }}
+                        <span class="cat-section-pill">{{ group.products|length }} item{% if group.products|length != 1 %}s{% endif %}</span>
+                    </div>
+                    {% if group.cat_slug %}
+                    <a href="/wholesale/catalog?cat={{ group.cat_id }}" class="cat-section-link">
+                        View All →
+                    </a>
+                    {% endif %}
+                </div>
+
+                <div class="product-grid">
+                    {% for product in group.products %}
+                    {# inline card #}
+                    <div class="product-card">
+                        <a href="/wholesale/product/{{ product.slug }}" class="card-img-wrap">
+                            <span class="stock-badge {% if product.is_in_stock %}in{% else %}out{% endif %}">
+                                {% if product.is_in_stock %}In Stock{% else %}Out{% endif %}
+                            </span>
+                            {% if product.silver_weight_grams %}
+                            <div class="wt-overlay">⚖ {{ product.silver_weight_grams }}g</div>
+                            {% endif %}
+                            {% if product.images %}
+                            <img src="/uploads/{{ product.images[0] }}" class="card-img"
+                                 alt="{{ product.name }}" loading="lazy">
+                            {% else %}
+                            <div class="card-no-img">◇</div>
+                            {% endif %}
+                        </a>
+                        <div class="card-body">
+                            <div class="card-sku">SKU · ZIMW-{{ '%04d' % product.id }}</div>
+                            <a href="/wholesale/product/{{ product.slug }}" class="card-name">{{ product.name }}</a>
+
+                            {% if product.silver_weight_grams %}
+                            <div class="card-weight-row">
+                                <span class="card-weight-label">Weight</span>
+                                <span class="card-weight-val">{{ product.silver_weight_grams }}</span>
+                                <span class="card-weight-unit">g silver</span>
+                            </div>
+                            {% elif product.specs and product.specs.get('Weight') %}
+                            <div class="card-weight-row">
+                                <span class="card-weight-label">Weight</span>
+                                <span class="card-weight-val">{{ product.specs.get('Weight') }}</span>
+                            </div>
+                            {% endif %}
+
+                            {% if product.specs %}
+                            <div class="card-specs">
+                                {% for key, val in product.specs.items() %}
+                                {% if key in ['Material', 'Purity', 'Finish', 'Stone', 'Gemstone', 'Size'] and val %}
+                                <span class="spec-tag">{{ key }}: {{ val }}</span>
+                                {% endif %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <div class="card-footer">
+                                <div>
+                                    <div class="card-price">₹{{ '{:,.0f}'.format(product.price|float) }}</div>
+                                    <div class="card-price-sub">MRP incl. GST</div>
+                                </div>
+                                <a href="/wholesale/product/{{ product.slug }}" class="card-detail-btn">Details →</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+            {% endif %}
+            {% endfor %}
+
+        <!-- ══════════════════════════════════════
+             FLAT VIEW (filtered by cat or search)
+        ══════════════════════════════════════ -->
+        {% else %}
+
+            {% if not products %}
+            <div class="empty-state">No products found. Try a different search or category.</div>
+            {% endif %}
+
+            <div class="product-grid">
+                {% for product in products %}
+                <div class="product-card">
+                    <a href="/wholesale/product/{{ product.slug }}" class="card-img-wrap">
+                        <span class="stock-badge {% if product.is_in_stock %}in{% else %}out{% endif %}">
+                            {% if product.is_in_stock %}In Stock{% else %}Out{% endif %}
+                        </span>
+                        {% if product.silver_weight_grams %}
+                        <div class="wt-overlay">⚖ {{ product.silver_weight_grams }}g</div>
+                        {% endif %}
+                        {% if product.images %}
+                        <img src="/uploads/{{ product.images[0] }}" class="card-img"
+                             alt="{{ product.name }}" loading="lazy">
+                        {% else %}
+                        <div class="card-no-img">◇</div>
+                        {% endif %}
+                    </a>
+                    <div class="card-body">
+                        <div class="card-sku">SKU · ZIMW-{{ '%04d' % product.id }}</div>
+                        <a href="/wholesale/product/{{ product.slug }}" class="card-name">{{ product.name }}</a>
+
+                        {% if product.silver_weight_grams %}
+                        <div class="card-weight-row">
+                            <span class="card-weight-label">Weight</span>
+                            <span class="card-weight-val">{{ product.silver_weight_grams }}</span>
+                            <span class="card-weight-unit">g silver</span>
+                        </div>
+                        {% elif product.specs and product.specs.get('Weight') %}
+                        <div class="card-weight-row">
+                            <span class="card-weight-label">Weight</span>
+                            <span class="card-weight-val">{{ product.specs.get('Weight') }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if product.specs %}
+                        <div class="card-specs">
+                            {% for key, val in product.specs.items() %}
+                            {% if key in ['Material', 'Purity', 'Finish', 'Stone', 'Gemstone', 'Size'] and val %}
+                            <span class="spec-tag">{{ key }}: {{ val }}</span>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
+                        <div class="card-footer">
+                            <div>
+                                <div class="card-price">₹{{ '{:,.0f}'.format(product.price|float) }}</div>
+                                <div class="card-price-sub">MRP incl. GST</div>
+                            </div>
+                            <a href="/wholesale/product/{{ product.slug }}" class="card-detail-btn">Details →</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        {% endif %}
+
+        <div class="catalog-end">— End of Catalog · {{ total }} item{% if total != 1 %}s{% endif %} —</div>
+    </main>
+</div>
+
+<script>
+// Smooth scroll for sidebar anchor links
+document.querySelectorAll('.js-anchor').forEach(link => {
+    link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (href.startsWith('#')) {
+            e.preventDefault();
+            const target = document.querySelector(href);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                // Update active state
+                document.querySelectorAll('.cat-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            }
+        }
+    });
+});
+
+// Highlight sidebar link as user scrolls through sections
+const sections = document.querySelectorAll('.cat-section');
+const sideLinks = document.querySelectorAll('.js-anchor');
+if (sections.length && sideLinks.length) {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const id = entry.target.id;
+                sideLinks.forEach(l => {
+                    l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+                });
+            }
+        });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(s => observer.observe(s));
+}
+</script>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Wholesale Buyers – Zimona Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-header { display:flex; justify-content:space-between; align-items:flex-end; padding-bottom:28px; border-bottom:2px solid var(--maroon); margin-bottom:40px; }
+    .page-eyebrow { font-size:11px; letter-spacing:0.2em; text-transform:uppercase; color:var(--maroon); margin-bottom:8px; font-weight:500; }
+    .page-title { font-family:'Playfair Display',serif; font-size:32px; font-weight:700; }
+
+    /* ADD FORM */
+    .add-panel { background:#fff; border:1px solid var(--border); border-top:3px solid var(--charcoal); padding:28px 32px; margin-bottom:40px; }
+    .add-panel-title { font-size:11px; letter-spacing:0.16em; text-transform:uppercase; font-weight:500; color:var(--charcoal); margin-bottom:20px; }
+    .add-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; }
+    .field-group { display:flex; flex-direction:column; gap:5px; }
+    .field-label { font-size:11px; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
+    .field-input { background:var(--cream); border:1px solid var(--border); padding:10px 14px; font-family:'DM Sans',sans-serif; font-size:14px; color:var(--charcoal); outline:none; transition:border-color 0.2s; }
+    .field-input:focus { border-color:var(--maroon); background:#fff; }
+    .btn-add { background:var(--charcoal); color:#fff; border:none; padding:11px 28px; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; transition:background 0.2s; }
+    .btn-add:hover { background:var(--maroon); }
+
+    /* BUYERS TABLE */
+    .buyers-table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--border); }
+    .buyers-table thead tr { background:var(--charcoal); }
+    .buyers-table thead th { padding:12px 16px; font-size:10px; font-weight:600; letter-spacing:0.14em; text-transform:uppercase; color:#fff; text-align:left; }
+    .buyers-table tbody tr { border-bottom:1px solid var(--border); transition:background 0.15s; }
+    .buyers-table tbody tr:hover { background:var(--ivory); }
+    .buyers-table td { padding:14px 16px; font-size:13px; color:var(--charcoal); vertical-align:middle; }
+
+    .status-badge { font-size:10px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; padding:4px 10px; }
+    .status-badge.active { background:#2A6B3C; color:#fff; }
+    .status-badge.inactive { background:#C0392B; color:#fff; }
+
+    .action-btn { background:none; border:1px solid var(--border); font-family:'DM Sans',sans-serif; font-size:11px; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); cursor:pointer; padding:5px 12px; transition:border-color 0.2s,color 0.2s; white-space:nowrap; }
+    .action-btn:hover { border-color:var(--maroon); color:var(--maroon); }
+    .action-btn.danger:hover { border-color:#C0392B; color:#C0392B; }
+    .action-btn.primary { background:var(--maroon); color:#fff; border-color:var(--maroon); }
+    .action-btn.primary:hover { background:var(--maroon-deep); }
+    .actions-cell { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+
+    /* reset pw inline form */
+    .reset-form { display:flex; gap:6px; align-items:center; }
+    .reset-input { border:1px solid var(--border); background:var(--cream); padding:5px 10px; font-family:'DM Sans',sans-serif; font-size:12px; color:var(--charcoal); outline:none; width:130px; }
+    .reset-input:focus { border-color:var(--maroon); }
+
+    .empty-state { padding:60px; text-align:center; background:#fff; border:1px solid var(--border); color:var(--muted); font-size:14px; font-style:italic; }
+
+    /* flash */
+    .flash { padding:12px 20px; margin-bottom:20px; font-size:13px; border-left:4px solid; }
+    .flash.success { background:#F0FDF4; border-color:#2A6B3C; color:#1A5A2F; }
+    .flash.error   { background:#FDF0F0; border-color:var(--maroon); color:var(--charcoal); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p class="page-eyebrow">Administration</p>
+        <h1 class="page-title">Wholesale Buyers</h1>
+    </div>
+    <a href="/admin" class="btn-outline">&larr; Back to Dashboard</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% for cat, msg in messages %}
+<div class="flash {{ cat }}">{{ msg }}</div>
+{% endfor %}
+{% endwith %}
+
+<!-- ADD BUYER -->
+<div class="add-panel">
+    <div class="add-panel-title">Add New Wholesale Buyer</div>
+    <form method="POST" action="/admin/wholesale/add">
+        <div class="add-grid">
+            <div class="field-group">
+                <label class="field-label">Mobile Number *</label>
+                <input type="tel" name="phone" class="field-input" placeholder="+91 98765 43210" required>
+            </div>
+            <div class="field-group">
+                <label class="field-label">Password *</label>
+                <input type="text" name="password" class="field-input" placeholder="Set initial password" required>
+            </div>
+            <div class="field-group">
+                <label class="field-label">Contact Name</label>
+                <input type="text" name="name" class="field-input" placeholder="Rajesh Sharma">
+            </div>
+            <div class="field-group">
+                <label class="field-label">Company / Shop Name</label>
+                <input type="text" name="company" class="field-input" placeholder="Silver Palace, Mumbai">
+            </div>
+            <div class="field-group">
+                <label class="field-label">City</label>
+                <input type="text" name="city" class="field-input" placeholder="Mumbai">
+            </div>
+            <div class="field-group">
+                <label class="field-label">Admin Notes</label>
+                <input type="text" name="notes" class="field-input" placeholder="e.g. Met at IIJS 2025">
+            </div>
+        </div>
+        <div style="margin-top:18px;">
+            <button type="submit" class="btn-add">+ Create Buyer Account</button>
+        </div>
+    </form>
+</div>
+
+<!-- BUYERS LIST -->
+{% if not buyers %}
+<div class="empty-state">No wholesale buyers yet. Create one above.</div>
+{% else %}
+<table class="buyers-table">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Phone</th>
+            <th>Name / Company</th>
+            <th>City</th>
+            <th>Notes</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for buyer in buyers %}
+        <tr>
+            <td style="color:var(--muted);font-size:12px;">{{ buyer.id }}</td>
+            <td><strong>{{ buyer.phone }}</strong></td>
+            <td>
+                {% if buyer.name %}<div>{{ buyer.name }}</div>{% endif %}
+                {% if buyer.company %}<div style="font-size:12px;color:var(--muted);">{{ buyer.company }}</div>{% endif %}
+            </td>
+            <td>{{ buyer.city or '—' }}</td>
+            <td style="font-size:12px;color:var(--muted);max-width:200px;">{{ buyer.notes or '—' }}</td>
+            <td>
+                <span class="status-badge {% if buyer.is_active %}active{% else %}inactive{% endif %}">
+                    {% if buyer.is_active %}Active{% else %}Inactive{% endif %}
+                </span>
+            </td>
+            <td style="font-size:12px;color:var(--muted);">{{ buyer.created.strftime('%d %b %Y') if buyer.created else '—' }}</td>
+            <td>
+                <div class="actions-cell">
+                    <!-- Toggle active -->
+                    <form action="/admin/wholesale/{{ buyer.id }}/toggle" method="POST" style="display:inline;">
+                        <button class="action-btn {% if buyer.is_active %}danger{% else %}primary{% endif %}">
+                            {% if buyer.is_active %}Disable{% else %}Enable{% endif %}
+                        </button>
+                    </form>
+
+                    <!-- Reset password -->
+                    <form action="/admin/wholesale/{{ buyer.id }}/reset-password" method="POST" class="reset-form">
+                        <input type="text" name="password" class="reset-input" placeholder="New password">
+                        <button class="action-btn">Reset PW</button>
+                    </form>
+
+                    <!-- Delete -->
+                    <form action="/admin/wholesale/{{ buyer.id }}/delete" method="POST" style="display:inline;"
+                          onsubmit="return confirm('Delete buyer {{ buyer.phone }}? This cannot be undone.')">
+                        <button class="action-btn danger">Delete</button>
+                    </form>
+                </div>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<div style="margin-top:24px;padding:16px 20px;background:var(--ivory);border:1px solid var(--border);font-size:12px;color:var(--muted);display:flex;gap:24px;flex-wrap:wrap;">
+    <span>🔒 Passwords are stored as salted SHA-256 hashes — never in plain text.</span>
+    <span>📲 Buyer portal: <strong style="color:var(--charcoal);">{{ request.url_root }}wholesale/login</strong></span>
+    <span>👁 Buyers cannot see admin panel or retail prices breakdown.</span>
+</div>
+{% endblock %}

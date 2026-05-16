@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Zimona Wholesale{% endblock %}</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cream:       #FAF6F0;
+            --ivory:       #F3EDE4;
+            --maroon:      #6B1A1A;
+            --maroon-deep: #4A1010;
+            --charcoal:    #1C1A1A;
+            --muted:       #7A6F6A;
+            --border:      #E4DDD5;
+            --silver:      #B8BEC7;
+            --silver-pale: #EEF0F4;
+            --white:       #FFFFFF;
+            /* wholesale accent: dark navy instead of maroon-light */
+            --accent:      #1B3A5C;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background: var(--cream);
+            color: var(--charcoal);
+            font-family: 'DM Sans', sans-serif;
+            font-weight: 300;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1,h2,h3,h4 { font-family: 'Playfair Display', serif; }
+
+        /* ── TOP BAR ── */
+        .topbar {
+            background: var(--charcoal);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 40px;
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .topbar a { color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.2s; }
+        .topbar a:hover { color: #fff; }
+
+        /* ── NAV ── */
+        nav.w-nav {
+            background: #fff;
+            border-bottom: 3px solid var(--maroon);
+            box-shadow: 0 2px 16px rgba(107,26,26,0.1);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .nav-inner {
+            padding: 0 40px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+        .nav-logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            font-style: italic;
+            color: var(--maroon);
+            text-decoration: none;
+            flex-shrink: 0;
+        }
+        .nav-divider {
+            width: 1px;
+            height: 28px;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+        .nav-badge {
+            font-size: 9px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            background: var(--charcoal);
+            color: #fff;
+            padding: 4px 10px;
+            flex-shrink: 0;
+        }
+        .nav-search-wrap {
+            flex: 1;
+            max-width: 480px;
+        }
+        .nav-search-wrap form {
+            display: flex;
+            border: 1px solid var(--border);
+            background: var(--cream);
+        }
+        .nav-search-wrap input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 10px 16px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: var(--charcoal);
+            outline: none;
+        }
+        .nav-search-wrap input::placeholder { color: #C0B8B2; font-style: italic; }
+        .nav-search-wrap button {
+            background: var(--maroon);
+            border: none;
+            color: #fff;
+            padding: 10px 18px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .nav-search-wrap button:hover { background: var(--maroon-deep); }
+        .nav-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .nav-buyer-name {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .nav-buyer-name strong { color: var(--charcoal); font-weight: 500; }
+        .btn-logout {
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            text-decoration: none;
+            border: 1px solid var(--border);
+            padding: 7px 16px;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .btn-logout:hover { border-color: var(--maroon); color: var(--maroon); }
+
+        /* ── PAGE WRAPPER ── */
+        .w-page { max-width: 1400px; margin: 0 auto; padding: 40px 40px 80px; }
+
+        /* ── BUTTONS ── */
+        .btn-primary {
+            display: inline-block;
+            background: var(--maroon);
+            color: #fff;
+            border: none;
+            padding: 13px 32px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.25s;
+        }
+        .btn-primary:hover { background: var(--maroon-deep); }
+        .btn-outline {
+            display: inline-block;
+            border: 1px solid var(--maroon);
+            color: var(--maroon);
+            padding: 12px 28px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s;
+        }
+        .btn-outline:hover { background: var(--maroon); color: #fff; }
+
+        /* ── SPEC PILL / BADGE ── */
+        .spec-pill {
+            display: inline-block;
+            background: var(--silver-pale);
+            color: var(--charcoal);
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 10px;
+            letter-spacing: 0.05em;
+            border: 1px solid var(--border);
+        }
+
+        /* ── WEIGHT BADGE (most important in wholesale) ── */
+        .weight-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--charcoal);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 5px 12px;
+            letter-spacing: 0.06em;
+        }
+        .weight-badge .wt-unit { opacity: 0.6; font-size: 10px; }
+
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <span>Zimona Wholesale Trade Portal &nbsp;·&nbsp; Authorised Buyers Only</span>
+        <span>
+            Logged in as <strong style="color:#fff;">{{ buyer.name or buyer.phone }}</strong>
+            &nbsp;|&nbsp;
+            <a href="/wholesale/logout">Sign Out</a>
+        </span>
+    </div>
+
+    <nav class="w-nav">
+        <div class="nav-inner">
+            <a href="/wholesale/catalog" class="nav-logo">Zimona</a>
+            <div class="nav-divider"></div>
+            <span class="nav-badge">Wholesale</span>
+
+            <div class="nav-search-wrap">
+                <form action="/wholesale/catalog" method="GET">
+                    <input type="text" name="q" value="{{ request.args.get('q', '') }}"
+                           placeholder="Search by name, category, tag…">
+                    <button type="submit">Search</button>
+                </form>
+            </div>
+
+            <div class="nav-right">
+                <span class="nav-buyer-name">
+                    {% if buyer.company %}<strong>{{ buyer.company }}</strong> · {% endif %}{{ buyer.phone }}
+                </span>
+                <a href="/wholesale/logout" class="btn-logout">Sign Out</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="w-page">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

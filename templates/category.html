@@ -347,17 +347,49 @@
     @media (max-width: 1200px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 960px) {
         .cat-content { grid-template-columns: 1fr; }
-        .filter-sidebar { display: none; position: fixed; inset: 0; z-index: 300; overflow-y: auto; border: none; top: 0; max-width: 320px; }
+        .filter-sidebar {
+            display: none; position: fixed; inset: 0; z-index: 300;
+            overflow-y: auto; border: none; top: 0; max-width: 300px;
+            box-shadow: 4px 0 32px rgba(0,0,0,0.18);
+        }
         .filter-sidebar.mobile-open { display: block; animation: slideInLeft 0.3s cubic-bezier(0.4,0,0.2,1); }
         @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         .mobile-filter-btn { display: flex; }
         .products-grid { grid-template-columns: repeat(2, 1fr); }
+        .filter-overlay { display: none; position: fixed; inset: 0; background: rgba(28,26,26,0.45); z-index: 299; }
+        .filter-overlay.open { display: block; }
     }
-    @media (max-width: 760px) {
+    @media (max-width: 768px) {
         .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .cat-hero { padding: 40px 20px 36px; }
-        .cat-body { padding: 28px 20px 52px; }
-        .cat-title { font-size: 30px; }
+        .cat-hero { padding: 36px 16px 28px; }
+        .cat-body { padding: 20px 16px 48px; }
+        .cat-title { font-size: 28px; }
+        .cat-count { font-size: 12px; }
+        /* Subcat pills scrollable */
+        .subcats-bar {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+        }
+        .subcats-bar::-webkit-scrollbar { display: none; }
+        .subcat-pill { flex-shrink: 0; scroll-snap-align: start; }
+        .product-name { font-size: 14px; }
+        .product-info { padding: 10px 12px 14px; }
+        .product-price { font-size: 13px; }
+        .results-toolbar { gap: 10px; }
+    }
+    @media (max-width: 480px) {
+        .cat-hero { padding: 28px 14px 22px; }
+        .cat-title { font-size: 23px; }
+        .cat-body { padding: 16px 14px 40px; }
+        .products-grid { gap: 8px; }
+        .product-name { font-size: 13px; }
+        .product-price { font-size: 12px; }
+        .product-info { padding: 8px 10px 12px; }
+        .active-filter-pill { font-size: 10px; padding: 4px 8px; }
     }
     @media (min-width: 961px) { .mobile-filter-btn { display: none; } }
 </style>
@@ -390,6 +422,7 @@
 </div>
 
 <div class="cat-body">
+<div class="filter-overlay" id="filterOverlay" onclick="closeMobileFilter()"></div>
     <div class="cat-content">
 
         <!-- FILTER SIDEBAR -->
@@ -707,25 +740,25 @@ function applySort(val) {
 // ── Mobile filter drawer ──
 const mobileBtn = document.getElementById('mobileFilterBtn');
 const sidebar = document.getElementById('filterSidebar');
+const filterOverlay = document.getElementById('filterOverlay');
+
+function closeMobileFilter() {
+    if (sidebar) sidebar.classList.remove('mobile-open');
+    if (filterOverlay) filterOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
 if (mobileBtn && sidebar) {
     const mq = window.matchMedia('(max-width: 960px)');
     const toggleMobileBtn = () => { mobileBtn.style.display = mq.matches ? 'flex' : 'none'; };
     mq.addEventListener('change', toggleMobileBtn);
     toggleMobileBtn();
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:299;transition:opacity 0.3s;';
-    document.body.appendChild(overlay);
     mobileBtn.addEventListener('click', () => {
         sidebar.classList.add('mobile-open');
-        overlay.style.display = 'block';
-        setTimeout(() => overlay.style.opacity = '1', 10);
+        if (filterOverlay) filterOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
     });
-    function closeDrawer() {
-        sidebar.classList.remove('mobile-open');
-        overlay.style.opacity = '0';
-        setTimeout(() => { overlay.style.display = 'none'; }, 300);
-    }
-    overlay.addEventListener('click', closeDrawer);
 }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobileFilter(); });
 </script>
 {% endblock %}

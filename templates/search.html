@@ -570,20 +570,62 @@
     /* ════════════════════════════════════════
        RESPONSIVE
     ════════════════════════════════════════ */
-    @media (max-width: 1200px) { .products-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 1200px) {
+        .products-grid { grid-template-columns: repeat(3, 1fr); }
+        .search-body { padding: 40px 28px 64px; }
+    }
     @media (max-width: 960px) {
         .search-content { grid-template-columns: 1fr; }
-        .filter-sidebar { display: none; position: fixed; inset: 0; z-index: 300; overflow-y: auto; border: none; top: 0; max-width: 320px; }
+        .filter-sidebar {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            overflow-y: auto;
+            border: none;
+            top: 0;
+            max-width: 300px;
+            box-shadow: 4px 0 32px rgba(0,0,0,0.18);
+        }
         .filter-sidebar.mobile-open { display: block; animation: slideInLeft 0.3s cubic-bezier(0.4,0,0.2,1); }
         @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
         .mobile-filter-btn { display: flex; }
         .products-grid { grid-template-columns: repeat(2, 1fr); }
+        /* Overlay behind mobile sidebar */
+        .filter-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(28,26,26,0.45);
+            z-index: 299;
+        }
+        .filter-overlay.open { display: block; }
     }
-    @media (max-width: 760px) {
+    @media (max-width: 768px) {
         .products-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .search-hero { padding: 40px 20px 36px; }
-        .search-body { padding: 28px 20px 52px; }
-        .search-hero-title { font-size: 30px; }
+        .search-hero { padding: 36px 16px 32px; }
+        .search-hero-title { font-size: 26px; }
+        .search-eyebrow { font-size: 10px; margin-bottom: 10px; }
+        .search-body { padding: 20px 16px 48px; }
+        .live-search-input { padding: 13px 16px; font-size: 14px; }
+        .live-search-btn { padding: 13px 18px; font-size: 10px; }
+        .product-name { font-size: 14px; }
+        .product-info { padding: 10px 12px 14px; }
+        .product-price { font-size: 13px; }
+        /* Sort row stacks */
+        .sort-row { flex-wrap: wrap; gap: 8px; }
+    }
+    @media (max-width: 480px) {
+        .search-hero { padding: 28px 14px 24px; }
+        .search-hero-title { font-size: 22px; }
+        .search-body { padding: 16px 14px 40px; }
+        .products-grid { gap: 8px; }
+        .product-name { font-size: 13px; }
+        .product-price { font-size: 12px; }
+        .product-info { padding: 8px 10px 12px; }
+        .live-search-input { padding: 12px 14px; font-size: 13px; }
+        .active-filter-pill { font-size: 10px; padding: 4px 8px; }
+        .page-btn { min-width: 34px; height: 34px; font-size: 12px; }
     }
     @media (min-width: 961px) { .mobile-filter-btn { display: none; } }
 </style>
@@ -621,6 +663,8 @@
 </div>
 
 <div class="search-body">
+<!-- Mobile filter overlay backdrop -->
+<div class="filter-overlay" id="filterOverlay" onclick="closeMobileFilter()"></div>
 {% if true %}
     <div class="search-content">
         <!-- FILTER SIDEBAR -->
@@ -993,29 +1037,28 @@ function applySort(val) {
 // ── Mobile filter drawer ──
 const mobileBtn = document.getElementById('mobileFilterBtn');
 const sidebar = document.getElementById('filterSidebar');
+const filterOverlay = document.getElementById('filterOverlay');
+
+function closeMobileFilter() {
+    if (sidebar) sidebar.classList.remove('mobile-open');
+    if (filterOverlay) filterOverlay.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
 if (mobileBtn && sidebar) {
-    // Show button only on mobile
     const mq = window.matchMedia('(max-width: 960px)');
     const toggleMobileBtn = () => { mobileBtn.style.display = mq.matches ? 'flex' : 'none'; };
     mq.addEventListener('change', toggleMobileBtn);
     toggleMobileBtn();
 
-    // Overlay
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:299;backdrop-filter:blur(2px);transition:opacity 0.3s;';
-    document.body.appendChild(overlay);
-
     mobileBtn.addEventListener('click', () => {
         sidebar.classList.add('mobile-open');
-        overlay.style.display = 'block';
-        setTimeout(() => overlay.style.opacity = '1', 10);
+        if (filterOverlay) filterOverlay.classList.add('open');
+        document.body.style.overflow = 'hidden'; // prevent background scroll
     });
-    function closeDrawer() {
-        sidebar.classList.remove('mobile-open');
-        overlay.style.opacity = '0';
-        setTimeout(() => { overlay.style.display = 'none'; }, 300);
-    }
-    overlay.addEventListener('click', closeDrawer);
 }
+
+// close on swipe-left or Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobileFilter(); });
 </script>
 {% endblock %}

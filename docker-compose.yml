@@ -1,13 +1,9 @@
-version: '3.8'
-
 services:
   web:
     build: .
     ports:
-      - "80:80"
+      - "80:8080"
     volumes:
-      # Named volume keeps uploads between local rebuilds,
-      # matching how Railway's persistent volume works.
       - uploads_data:/app/static/uploads
     environment:
       - SECRET_KEY=${SECRET_KEY}

@@ -43,6 +43,18 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
+def wholesale_login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('wholesale_buyer_id'):
+            return redirect(url_for('wholesale_login', next=request.path))
+        buyer = WholesaleBuyer.query.get(session['wholesale_buyer_id'])
+        if not buyer or not buyer.is_active:
+            session.pop('wholesale_buyer_id', None)
+            return redirect(url_for('wholesale_login'))
+        return f(*args, **kwargs)
+    return decorated
+
 @app.errorhandler(413)
 def request_entity_too_large(e):
     from flask import jsonify, request as _req
@@ -217,6 +229,34 @@ class Product(db.Model):
             'silver_multiplier': float(self.silver_multiplier) if self.silver_multiplier else None,
             'silver_fixed_addition': float(self.silver_fixed_addition) if self.silver_fixed_addition else None,
         }
+
+# ---------- Wholesale Buyer Model ----------
+class WholesaleBuyer(db.Model):
+    """Invite-only wholesale accounts. Created by admin; login with phone + password."""
+    id            = db.Column(db.Integer, primary_key=True)
+    phone         = db.Column(db.String(20), unique=True, nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
+    name          = db.Column(db.String(200), nullable=True)
+    company       = db.Column(db.String(200), nullable=True)
+    city          = db.Column(db.String(100), nullable=True)
+    notes         = db.Column(db.Text, nullable=True)
+    is_active     = db.Column(db.Boolean, default=True, nullable=False)
+    created       = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def set_password(self, raw):
+        import hashlib, os as _os
+        salt = _os.urandom(16).hex()
+        h = hashlib.sha256((salt + raw).encode()).hexdigest()
+        self.password_hash = f"{salt}:{h}"
+
+    def check_password(self, raw):
+        import hashlib
+        try:
+            salt, h = self.password_hash.split(':', 1)
+            return hashlib.sha256((salt + raw).encode()).hexdigest() == h
+        except Exception:
+            return False
+
 
 # ---------- Seed Sample Products ----------
 def seed_sample_products():
@@ -1341,6 +1381,190 @@ def category_assets(filename):
 def assets_file(filename):
     return send_from_directory(os.path.join('templates', 'assets'), filename)
 
+# ═══════════════════════════════════════════════════════════════════════
+#  WHOLESALE PORTAL ROUTES
+# ═══════════════════════════════════════════════════════════════════════
+
+@app.route('/wholesale/login', methods=['GET', 'POST'])
+def wholesale_login():
+    if session.get('wholesale_buyer_id'):
+        return redirect(url_for('wholesale_catalog'))
+    error = None
+    if request.method == 'POST':
+        phone = request.form.get('phone', '').strip()
+        password = request.form.get('password', '')
+        buyer = WholesaleBuyer.query.filter_by(phone=phone, is_active=True).first()
+        if buyer and buyer.check_password(password):
+            session['wholesale_buyer_id'] = buyer.id
+            return redirect(request.args.get('next') or url_for('wholesale_catalog'))
+        error = 'Invalid phone number or password.'
+    return render_template('wholesale/login.html', error=error)
+
+@app.route('/wholesale/logout')
+def wholesale_logout():
+    session.pop('wholesale_buyer_id', None)
+    return redirect(url_for('wholesale_login'))
+
+@app.route('/wholesale')
+@app.route('/wholesale/catalog')
+@wholesale_login_required
+def wholesale_catalog():
+    buyer = WholesaleBuyer.query.get(session['wholesale_buyer_id'])
+    q             = request.args.get('q', '').strip()
+    cat_id        = request.args.get('cat', type=int)
+    sort_by       = request.args.get('sort', 'featured')
+    in_stock_only = request.args.get('in_stock') == '1'
+
+    query = Product.query.join(Category, isouter=True)
+    if q:
+        query = query.filter(or_(
+            Product.name.ilike(f'%{q}%'),
+            Product.tags.ilike(f'%{q}%'),
+            Product.description.ilike(f'%{q}%'),
+            Category.name.ilike(f'%{q}%'),
+        ))
+    if cat_id:
+        cat = Category.query.get(cat_id)
+        if cat:
+            sub_ids = [s.id for s in cat.subcategories.all()]
+            all_ids = [cat_id] + sub_ids
+            query = query.filter(Product.category_id.in_(all_ids))
+    if in_stock_only:
+        query = query.filter(Product.is_in_stock == True)
+
+    products = query.all()
+
+    if sort_by == 'price_asc':
+        products.sort(key=lambda p: float(p.price))
+    elif sort_by == 'price_desc':
+        products.sort(key=lambda p: float(p.price), reverse=True)
+    elif sort_by == 'weight_asc':
+        products.sort(key=lambda p: float(p.silver_weight_grams or 0))
+    elif sort_by == 'weight_desc':
+        products.sort(key=lambda p: float(p.silver_weight_grams or 0), reverse=True)
+    elif sort_by == 'name_asc':
+        products.sort(key=lambda p: p.name.lower())
+    else:
+        products.sort(key=lambda p: (-(p.sort_order or 0), p.name.lower()))
+
+    categories = Category.query.filter_by(parent_id=None).order_by(Category.name).all()
+    active_cat = Category.query.get(cat_id) if cat_id else None
+
+    # Group products by top-level category for the default view
+    # When filtering by cat or searching, skip grouping (show flat list)
+    grouped_products = []
+    if not cat_id and not q:
+        from collections import OrderedDict
+        cat_groups = OrderedDict()
+        uncategorised = []
+        for p in products:
+            if p.category:
+                top = p.category.parent if p.category.parent_id else p.category
+                key = top.id
+                if key not in cat_groups:
+                    cat_groups[key] = {
+                        'cat_name': top.name,
+                        'cat_slug': top.slug,
+                        'cat_id': top.id,
+                        'products': []
+                    }
+                cat_groups[key]['products'].append(p)
+            else:
+                uncategorised.append(p)
+        grouped_products = list(cat_groups.values())
+        if uncategorised:
+            grouped_products.append({
+                'cat_name': 'Uncategorised',
+                'cat_slug': '',
+                'cat_id': None,
+                'products': uncategorised
+            })
+
+    return render_template('wholesale/catalog.html',
+        buyer=buyer, products=products, categories=categories,
+        grouped_products=grouped_products,
+        active_cat=active_cat, q=q, sort_by=sort_by,
+        in_stock_only=in_stock_only, total=len(products))
+
+@app.route('/wholesale/product/<slug>')
+@wholesale_login_required
+def wholesale_product(slug):
+    buyer   = WholesaleBuyer.query.get(session['wholesale_buyer_id'])
+    product = Product.query.filter_by(slug=slug).first_or_404()
+    return render_template('wholesale/product.html', buyer=buyer, product=product)
+
+@app.route('/admin/wholesale/count')
+@login_required
+def admin_wholesale_count():
+    active = WholesaleBuyer.query.filter_by(is_active=True).count()
+    total  = WholesaleBuyer.query.count()
+    return jsonify({'active': active, 'total': total})
+
+# ── Admin: Wholesale buyer management ─────────────────────────────────────
+
+@app.route('/admin/wholesale')
+@login_required
+def admin_wholesale():
+    buyers = WholesaleBuyer.query.order_by(WholesaleBuyer.created.desc()).all()
+    total_active = sum(1 for b in buyers if b.is_active)
+    return render_template('wholesale/admin_buyers.html', buyers=buyers, total_active=total_active)
+
+@app.route('/admin/wholesale/add', methods=['POST'])
+@login_required
+def admin_wholesale_add():
+    phone    = request.form.get('phone', '').strip()
+    password = request.form.get('password', '').strip()
+    name     = request.form.get('name', '').strip()
+    company  = request.form.get('company', '').strip()
+    city     = request.form.get('city', '').strip()
+    notes    = request.form.get('notes', '').strip()
+    if not phone or not password:
+        flash('Phone and password are required.', 'error')
+        return redirect(url_for('admin_wholesale'))
+    if WholesaleBuyer.query.filter_by(phone=phone).first():
+        flash('A buyer with that phone number already exists.', 'error')
+        return redirect(url_for('admin_wholesale'))
+    buyer = WholesaleBuyer(phone=phone, name=name or None, company=company or None,
+                           city=city or None, notes=notes or None)
+    buyer.set_password(password)
+    db.session.add(buyer)
+    db.session.commit()
+    flash(f'Wholesale buyer {phone} created successfully.', 'success')
+    return redirect(url_for('admin_wholesale'))
+
+@app.route('/admin/wholesale/<int:buyer_id>/toggle', methods=['POST'])
+@login_required
+def admin_wholesale_toggle(buyer_id):
+    buyer = WholesaleBuyer.query.get_or_404(buyer_id)
+    buyer.is_active = not buyer.is_active
+    db.session.commit()
+    status = 'enabled' if buyer.is_active else 'disabled'
+    flash(f'Buyer {buyer.phone} {status}.', 'success')
+    return redirect(url_for('admin_wholesale'))
+
+@app.route('/admin/wholesale/<int:buyer_id>/delete', methods=['POST'])
+@login_required
+def admin_wholesale_delete(buyer_id):
+    buyer = WholesaleBuyer.query.get_or_404(buyer_id)
+    phone = buyer.phone
+    db.session.delete(buyer)
+    db.session.commit()
+    flash(f'Buyer {phone} removed.', 'success')
+    return redirect(url_for('admin_wholesale'))
+
+@app.route('/admin/wholesale/<int:buyer_id>/reset-password', methods=['POST'])
+@login_required
+def admin_wholesale_reset_pw(buyer_id):
+    buyer    = WholesaleBuyer.query.get_or_404(buyer_id)
+    password = request.form.get('password', '').strip()
+    if not password:
+        flash('New password cannot be empty.', 'error')
+        return redirect(url_for('admin_wholesale'))
+    buyer.set_password(password)
+    db.session.commit()
+    flash(f'Password updated for {buyer.phone}.', 'success')
+    return redirect(url_for('admin_wholesale'))
+
 # ---------- DB Init ----------
 with app.app_context():
     retries = 10
@@ -1403,3 +1627,362 @@ with app.app_context():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=os.environ.get('FLASK_ENV') != 'production')
+
+# ═══════════════════════════════════════════════════════════════════════
+#  CATALOG POPULATION API
+#  All endpoints require header:  X-API-Key: <CATALOG_API_KEY env var>
+#  Set CATALOG_API_KEY in your .env / Railway environment variables.
+# ═══════════════════════════════════════════════════════════════════════
+
+CATALOG_API_KEY = os.environ.get('CATALOG_API_KEY', '')
+
+def api_key_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not CATALOG_API_KEY:
+            return jsonify({'error': 'API not enabled. Set CATALOG_API_KEY environment variable.'}), 503
+        key = request.headers.get('X-API-Key', '')
+        if key != CATALOG_API_KEY:
+            return jsonify({'error': 'Unauthorized. Invalid or missing X-API-Key header.'}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+
+# ── GET /api/v1/products ─────────────────────────────────────────────
+@app.route('/api/v1/products', methods=['GET'])
+@api_key_required
+def apiv1_products_list():
+    """List all products. Optional ?category=rings&in_stock=1"""
+    q            = request.args.get('q', '').strip()
+    category     = request.args.get('category', '').strip()
+    in_stock     = request.args.get('in_stock') == '1'
+    page         = max(1, request.args.get('page', 1, type=int))
+    per_page     = min(100, request.args.get('per_page', 50, type=int))
+
+    query = Product.query.join(Category, isouter=True)
+    if q:
+        query = query.filter(or_(Product.name.ilike(f'%{q}%'), Product.tags.ilike(f'%{q}%')))
+    if category:
+        cat = Category.query.filter(func.lower(Category.name) == category.lower()).first()
+        if cat:
+            sub_ids = [s.id for s in cat.subcategories.all()]
+            query = query.filter(Product.category_id.in_([cat.id] + sub_ids))
+    if in_stock:
+        query = query.filter(Product.is_in_stock == True)
+
+    total   = query.count()
+    products = query.offset((page - 1) * per_page).limit(per_page).all()
+    return jsonify({
+        'total': total, 'page': page, 'per_page': per_page,
+        'pages': max(1, (total + per_page - 1) // per_page),
+        'products': [p.to_dict() for p in products]
+    })
+
+
+# ── GET /api/v1/products/<id> ────────────────────────────────────────
+@app.route('/api/v1/products/<int:product_id>', methods=['GET'])
+@api_key_required
+def apiv1_product_get(product_id):
+    p = Product.query.get_or_404(product_id)
+    return jsonify(p.to_dict())
+
+
+# ── POST /api/v1/products ────────────────────────────────────────────
+@app.route('/api/v1/products', methods=['POST'])
+@api_key_required
+def apiv1_product_create():
+    """
+    Create a new product.
+    Body (JSON):
+    {
+        "name": "Sterling Silver Ring",           # required
+        "price": 1499.00,                         # required
+        "category": "Rings",                      # name or id — optional
+        "description": "...",
+        "specs": {"Material": "925 Silver", "Weight": "4.5g", "Size": "7"},
+        "tags": "ring,silver,solitaire",
+        "synonyms": "band,ring",
+        "meta_title": "...",
+        "meta_description": "...",
+        "meta_keywords": "...",
+        "color": "Silver",
+        "buying_for": "Womens",
+        "is_in_stock": true,
+        "sort_order": 0,
+        "silver_pricing_enabled": false,
+        "silver_weight_grams": 4.5,
+        "silver_multiplier": 1.15,
+        "silver_fixed_addition": 200
+    }
+    """
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'JSON body required'}), 400
+    if not data.get('name') or data.get('price') is None:
+        return jsonify({'error': '"name" and "price" are required fields'}), 400
+
+    name = data['name'].strip()
+    slug = slugify(name)
+    # ensure unique slug
+    existing = Product.query.filter_by(slug=slug).first()
+    if existing:
+        slug = f"{slug}-{secrets.token_hex(3)}"
+
+    # resolve category
+    category_id = None
+    cat_val = data.get('category')
+    if cat_val:
+        if isinstance(cat_val, int):
+            category_id = cat_val
+        else:
+            cat = Category.query.filter(func.lower(Category.name) == str(cat_val).lower()).first()
+            if cat:
+                category_id = cat.id
+
+    p = Product(
+        name                  = name,
+        slug                  = slug,
+        price                 = float(data['price']),
+        description           = data.get('description', ''),
+        category_id           = category_id,
+        specs                 = data.get('specs', {}),
+        tags                  = (data.get('tags', '') or '')[:500],
+        synonyms              = (data.get('synonyms', '') or '')[:500],
+        meta_title            = (data.get('meta_title', '') or '')[:60],
+        meta_description      = (data.get('meta_description', '') or '')[:160],
+        meta_keywords         = (data.get('meta_keywords', '') or '')[:200],
+        color                 = data.get('color'),
+        buying_for            = data.get('buying_for'),
+        is_in_stock           = bool(data.get('is_in_stock', True)),
+        sort_order            = int(data.get('sort_order', 0) or 0),
+        rating_value          = data.get('rating_value'),
+        rating_count          = int(data.get('rating_count', 0) or 0),
+        silver_pricing_enabled= bool(data.get('silver_pricing_enabled', False)),
+        silver_weight_grams   = data.get('silver_weight_grams'),
+        silver_multiplier     = data.get('silver_multiplier'),
+        silver_fixed_addition = data.get('silver_fixed_addition'),
+        images                = data.get('images', []),
+    )
+
+    # auto-compute price from silver rate if enabled
+    if p.silver_pricing_enabled and p.silver_weight_grams:
+        live_rate = float(Settings.get('silver_live_rate_per_kg', 0) or 0)
+        premium   = float(Settings.get('silver_premium_per_kg', 0) or 0)
+        computed  = compute_silver_price(p, live_rate, premium)
+        if computed:
+            p.price = computed
+
+    db.session.add(p)
+    db.session.commit()
+    return jsonify({'created': True, 'product': p.to_dict()}), 201
+
+
+# ── PUT /api/v1/products/<id> ────────────────────────────────────────
+@app.route('/api/v1/products/<int:product_id>', methods=['PUT', 'PATCH'])
+@api_key_required
+def apiv1_product_update(product_id):
+    """
+    Update an existing product. Send only the fields you want to change.
+    Same field names as POST. PATCH and PUT both do partial update.
+    """
+    p = Product.query.get_or_404(product_id)
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({'error': 'JSON body required'}), 400
+
+    if 'name' in data:
+        p.name = data['name'].strip()
+        p.slug = slugify(p.name)
+        existing = Product.query.filter(Product.slug == p.slug, Product.id != p.id).first()
+        if existing:
+            p.slug = f"{p.slug}-{secrets.token_hex(3)}"
+
+    if 'price' in data:          p.price = float(data['price'])
+    if 'description' in data:    p.description = data['description']
+    if 'specs' in data:          p.specs = data['specs']
+    if 'tags' in data:           p.tags = (data['tags'] or '')[:500]
+    if 'synonyms' in data:       p.synonyms = (data['synonyms'] or '')[:500]
+    if 'meta_title' in data:     p.meta_title = (data['meta_title'] or '')[:60]
+    if 'meta_description' in data: p.meta_description = (data['meta_description'] or '')[:160]
+    if 'meta_keywords' in data:  p.meta_keywords = (data['meta_keywords'] or '')[:200]
+    if 'color' in data:          p.color = data['color']
+    if 'buying_for' in data:     p.buying_for = data['buying_for']
+    if 'is_in_stock' in data:    p.is_in_stock = bool(data['is_in_stock'])
+    if 'sort_order' in data:     p.sort_order = int(data['sort_order'] or 0)
+    if 'rating_value' in data:   p.rating_value = data['rating_value']
+    if 'rating_count' in data:   p.rating_count = int(data['rating_count'] or 0)
+    if 'images' in data:         p.images = data['images']
+
+    if 'silver_pricing_enabled' in data: p.silver_pricing_enabled = bool(data['silver_pricing_enabled'])
+    if 'silver_weight_grams' in data:    p.silver_weight_grams = data['silver_weight_grams']
+    if 'silver_multiplier' in data:      p.silver_multiplier = data['silver_multiplier']
+    if 'silver_fixed_addition' in data:  p.silver_fixed_addition = data['silver_fixed_addition']
+
+    if 'category' in data:
+        cat_val = data['category']
+        if cat_val is None:
+            p.category_id = None
+        elif isinstance(cat_val, int):
+            p.category_id = cat_val
+        else:
+            cat = Category.query.filter(func.lower(Category.name) == str(cat_val).lower()).first()
+            p.category_id = cat.id if cat else p.category_id
+
+    p.updated = datetime.utcnow()
+    db.session.commit()
+    return jsonify({'updated': True, 'product': p.to_dict()})
+
+
+# ── DELETE /api/v1/products/<id> ─────────────────────────────────────
+@app.route('/api/v1/products/<int:product_id>', methods=['DELETE'])
+@api_key_required
+def apiv1_product_delete(product_id):
+    p = Product.query.get_or_404(product_id)
+    name = p.name
+    db.session.delete(p)
+    db.session.commit()
+    return jsonify({'deleted': True, 'name': name})
+
+
+# ── POST /api/v1/products/bulk ───────────────────────────────────────
+@app.route('/api/v1/products/bulk', methods=['POST'])
+@api_key_required
+def apiv1_products_bulk():
+    """
+    Create or update multiple products in one call.
+    Body: { "products": [ {...}, {...} ] }
+    Each product: same fields as POST /api/v1/products.
+    If a product with the same name already exists it will be UPDATED,
+    otherwise CREATED. Returns counts of each.
+    """
+    data = request.get_json(silent=True)
+    if not data or 'products' not in data:
+        return jsonify({'error': 'Body must be {"products": [...]}'}), 400
+
+    created_count = 0
+    updated_count = 0
+    errors = []
+
+    for i, item in enumerate(data['products']):
+        try:
+            if not item.get('name') or item.get('price') is None:
+                errors.append({'index': i, 'error': 'name and price required'})
+                continue
+
+            name = item['name'].strip()
+            existing = Product.query.filter(
+                func.lower(Product.name) == name.lower()
+            ).first()
+
+            # resolve category
+            category_id = None
+            cat_val = item.get('category')
+            if cat_val:
+                if isinstance(cat_val, int):
+                    category_id = cat_val
+                else:
+                    cat = Category.query.filter(
+                        func.lower(Category.name) == str(cat_val).lower()
+                    ).first()
+                    if cat:
+                        category_id = cat.id
+
+            if existing:
+                # update
+                p = existing
+                p.price       = float(item['price'])
+                p.description = item.get('description', p.description)
+                p.category_id = category_id if cat_val is not None else p.category_id
+                p.specs       = item.get('specs', p.specs)
+                p.tags        = (item.get('tags', p.tags) or '')[:500]
+                p.synonyms    = (item.get('synonyms', p.synonyms) or '')[:500]
+                p.is_in_stock = bool(item.get('is_in_stock', p.is_in_stock))
+                p.color       = item.get('color', p.color)
+                p.buying_for  = item.get('buying_for', p.buying_for)
+                p.sort_order  = int(item.get('sort_order', p.sort_order) or 0)
+                if 'silver_weight_grams' in item:
+                    p.silver_weight_grams = item['silver_weight_grams']
+                if 'silver_multiplier' in item:
+                    p.silver_multiplier = item['silver_multiplier']
+                if 'silver_pricing_enabled' in item:
+                    p.silver_pricing_enabled = bool(item['silver_pricing_enabled'])
+                if 'images' in item:
+                    p.images = item['images']
+                p.updated = datetime.utcnow()
+                updated_count += 1
+            else:
+                # create
+                slug = slugify(name)
+                if Product.query.filter_by(slug=slug).first():
+                    slug = f"{slug}-{secrets.token_hex(3)}"
+                p = Product(
+                    name                  = name,
+                    slug                  = slug,
+                    price                 = float(item['price']),
+                    description           = item.get('description', ''),
+                    category_id           = category_id,
+                    specs                 = item.get('specs', {}),
+                    tags                  = (item.get('tags', '') or '')[:500],
+                    synonyms              = (item.get('synonyms', '') or '')[:500],
+                    meta_title            = (item.get('meta_title', '') or '')[:60],
+                    meta_description      = (item.get('meta_description', '') or '')[:160],
+                    meta_keywords         = (item.get('meta_keywords', '') or '')[:200],
+                    color                 = item.get('color'),
+                    buying_for            = item.get('buying_for'),
+                    is_in_stock           = bool(item.get('is_in_stock', True)),
+                    sort_order            = int(item.get('sort_order', 0) or 0),
+                    silver_pricing_enabled= bool(item.get('silver_pricing_enabled', False)),
+                    silver_weight_grams   = item.get('silver_weight_grams'),
+                    silver_multiplier     = item.get('silver_multiplier'),
+                    silver_fixed_addition = item.get('silver_fixed_addition'),
+                    images                = item.get('images', []),
+                )
+                db.session.add(p)
+                created_count += 1
+        except Exception as e:
+            errors.append({'index': i, 'name': item.get('name'), 'error': str(e)})
+
+    db.session.commit()
+    return jsonify({
+        'created': created_count,
+        'updated': updated_count,
+        'errors':  errors,
+        'total_processed': created_count + updated_count + len(errors)
+    }), 200 if not errors else 207
+
+
+# ── GET /api/v1/categories ───────────────────────────────────────────
+@app.route('/api/v1/categories', methods=['GET'])
+@api_key_required
+def apiv1_categories_list():
+    cats = Category.query.order_by(Category.name).all()
+    return jsonify([{
+        'id': c.id, 'name': c.name, 'slug': c.slug,
+        'parent_id': c.parent_id,
+        'product_count': len(c.products)
+    } for c in cats])
+
+
+# ── POST /api/v1/categories ──────────────────────────────────────────
+@app.route('/api/v1/categories', methods=['POST'])
+@api_key_required
+def apiv1_category_create():
+    """Body: {"name": "Rings", "parent": "Gifts"}  (parent is optional)"""
+    data = request.get_json(silent=True)
+    if not data or not data.get('name'):
+        return jsonify({'error': '"name" is required'}), 400
+    name = data['name'].strip()
+    slug = slugify(name)
+    if Category.query.filter_by(slug=slug).first():
+        return jsonify({'error': f'Category "{name}" already exists'}), 409
+    parent_id = None
+    if data.get('parent'):
+        parent = Category.query.filter(
+            func.lower(Category.name) == str(data['parent']).lower()
+        ).first()
+        if parent:
+            parent_id = parent.id
+    cat = Category(name=name, slug=slug, spec_schema=[], parent_id=parent_id)
+    db.session.add(cat)
+    db.session.commit()
+    return jsonify({'created': True, 'id': cat.id, 'name': cat.name, 'slug': cat.slug}), 201
