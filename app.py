@@ -59,17 +59,17 @@ db = SQLAlchemy(app)
 
 # Invalidate pooled connections that encounter SSL or operational errors so they
 # are never handed back out — forces a fresh connection on the next request.
-# This is the recommended SQLAlchemy pattern for "bad record mac" / EOF errors
-# on managed Postgres services (Railway, RDS, Supabase, etc.).
+# Wrapped in app_context so db.engine is accessible at module load time.
 from sqlalchemy import event as _sa_event
 import psycopg2 as _psycopg2
 
-@_sa_event.listens_for(db.engine, 'handle_error')
-def _handle_db_error(exception_context):
-    orig = getattr(exception_context.original_exception, '__cause__', None) \
-           or exception_context.original_exception
-    if isinstance(orig, (_psycopg2.OperationalError, _psycopg2.InterfaceError)):
-        exception_context.invalidate_pool_on_disconnect = True
+with app.app_context():
+    @_sa_event.listens_for(db.engine, 'handle_error')
+    def _handle_db_error(exception_context):
+        orig = getattr(exception_context.original_exception, '__cause__', None) \
+               or exception_context.original_exception
+        if isinstance(orig, (_psycopg2.OperationalError, _psycopg2.InterfaceError)):
+            exception_context.invalidate_pool_on_disconnect = True
 
 _genai_client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
 
