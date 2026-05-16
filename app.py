@@ -16,17 +16,35 @@ _db_url = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@localho
 # Railway (and most managed PG providers) require SSL; add sslmode only when connecting
 # to a remote host (i.e. not a local docker-compose db).
 _is_local = 'localhost' in _db_url or '@db:' in _db_url
+
+# Build connect_args:
+# - On Railway/remote: require SSL + TCP keepalives so the OS detects dead connections
+#   before SQLAlchemy attempts to reuse them (fixes "ssl/tls alert bad record mac").
+#   keepalives_idle=30  → send first keepalive probe after 30 s of silence
+#   keepalives_interval=10 → resend every 10 s while unanswered
+#   keepalives_count=5  → declare dead after 5 missed probes (~80 s total)
+# - On local docker-compose: no SSL, no keepalives needed.
+_connect_args = {} if _is_local else {
+    'sslmode': 'require',
+    'keepalives': 1,
+    'keepalives_idle': 30,
+    'keepalives_interval': 10,
+    'keepalives_count': 5,
+}
+
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
-# pool_pre_ping tests each connection before use, discarding stale ones.
-# pool_recycle drops connections older than 280s — Railway's managed Postgres
-# silently kills idle SSL connections, causing 'EOF detected' errors without this.
+# pool_pre_ping: issues a cheap "SELECT 1" before handing out a connection;
+#   discards and reconnects if the check fails (catches most stale-connection errors).
+# pool_recycle: proactively replace connections older than 60 s — Railway's proxy
+#   can silently kill idle SSL sessions, so we recycle well before that happens.
+# pool_size / max_overflow kept small; gunicorn sync workers don't need many.
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
-    'pool_recycle': 280,
+    'pool_recycle': 60,
     'pool_timeout': 20,
     'pool_size': 5,
     'max_overflow': 2,
-    **({} if _is_local else {'connect_args': {'sslmode': 'require'}}),
+    'connect_args': _connect_args,
 }
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Use absolute path so uploads work regardless of CWD (important on Railway/Docker)
@@ -38,6 +56,21 @@ app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'webp'}
 os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'categories'), exist_ok=True)
 
 db = SQLAlchemy(app)
+
+# Invalidate pooled connections that encounter SSL or operational errors so they
+# are never handed back out — forces a fresh connection on the next request.
+# This is the recommended SQLAlchemy pattern for "bad record mac" / EOF errors
+# on managed Postgres services (Railway, RDS, Supabase, etc.).
+from sqlalchemy import event as _sa_event
+import psycopg2 as _psycopg2
+
+@_sa_event.listens_for(db.engine, 'handle_error')
+def _handle_db_error(exception_context):
+    orig = getattr(exception_context.original_exception, '__cause__', None) \
+           or exception_context.original_exception
+    if isinstance(orig, (_psycopg2.OperationalError, _psycopg2.InterfaceError)):
+        exception_context.invalidate_pool_on_disconnect = True
+
 _genai_client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
 
 ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
