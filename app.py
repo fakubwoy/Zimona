@@ -23,11 +23,13 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {} if _is_local else {
     'pool_recycle': 300,
 }
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join('static', 'uploads')
+# Use absolute path so uploads work regardless of CWD (important on Railway/Docker)
+_BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app.config['UPLOAD_FOLDER'] = os.path.join(_BASE_DIR, 'static', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB — client-side pre-compression keeps typical uploads well under this
 app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'webp'}
 
-os.makedirs(os.path.join('static', 'uploads', 'categories'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'categories'), exist_ok=True)
 
 db = SQLAlchemy(app)
 _genai_client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
@@ -131,37 +133,11 @@ class Category(db.Model):
 
     @staticmethod
     def seed_defaults():
-        defaults = [
-            ('Rings', ['Material', 'Weight', 'Size', 'Gemstone']),
-            ('Necklaces', ['Material', 'Length', 'Clasp Type', 'Pendant']),
-            ('Earrings', ['Material', 'Type', 'Length', 'Closure']),
-            ('Bracelets', ['Material', 'Length', 'Width', 'Clasp']),
-            ('Bangles', ['Material', 'Diameter', 'Width', 'Design']),
-            ('Chains', ['Material', 'Length', 'Thickness', 'Style'])
-        ]
-        for name, schema in defaults:
-            if not Category.query.filter_by(name=name).first():
-                db.session.add(Category(name=name, slug=slugify(name), spec_schema=schema))
-        db.session.commit()
+        pass
 
     @staticmethod
     def seed_gifts():
-        if Category.query.filter_by(slug='gifts').first():
-            return
-        gifts = Category(name='Gifts', slug='gifts', spec_schema=[])
-        db.session.add(gifts)
-        db.session.flush()  # get gifts.id before commit
-        subcats = [
-            'Silver Coins',
-            'Silver Idols',
-            'Puja Items',
-            'Silver Utensils',
-            'Nazar & Protection Jewellery',
-        ]
-        for subname in subcats:
-            if not Category.query.filter_by(slug=slugify(subname)).first():
-                db.session.add(Category(name=subname, slug=slugify(subname), spec_schema=[], parent_id=gifts.id))
-        db.session.commit()
+        pass
 class Settings(db.Model):
     id = db.Column(db.Integer, primary_key=True)          # ← new auto‑increment primary key
     key = db.Column(db.String(100), unique=True, nullable=False)  # ← key is now unique, not PK
@@ -258,56 +234,6 @@ class WholesaleBuyer(db.Model):
             return False
 
 
-# ---------- Seed Sample Products ----------
-def seed_sample_products():
-    if Product.query.count() > 0:
-        return
-    rings = Category.query.filter_by(name='Rings').first()
-    necklaces = Category.query.filter_by(name='Necklaces').first()
-    earrings = Category.query.filter_by(name='Earrings').first()
-
-    samples = [
-        Product(
-            name='Solitaire Diamond Ring',
-            price=125000.00,
-            description='Exquisite solitaire diamond set in 18K white gold.',
-            category=rings,
-            specs={'Material': '18K White Gold', 'Weight': '4.5g', 'Size': '7', 'Gemstone': 'Diamond (0.5ct)'},
-            meta_title='Solitaire Diamond Ring | 18K White Gold',
-            meta_description='Buy solitaire diamond ring in 18K white gold. 0.5ct diamond, elegant design.',
-            meta_keywords='diamond ring, solitaire, white gold, engagement ring',
-            tags='diamond,solitaire,engagement',
-            synonyms='band,ring'
-        ),
-        Product(
-            name='Pearl Pendant Necklace',
-            price=45000.00,
-            description='Cultured freshwater pearl with sterling silver chain.',
-            category=necklaces,
-            specs={'Material': 'Sterling Silver', 'Length': '18 inches', 'Clasp Type': 'Lobster Claw', 'Pendant': 'Freshwater Pearl'},
-            meta_title='Pearl Pendant Necklace | Sterling Silver',
-            meta_description='Elegant pearl pendant necklace on sterling silver chain.',
-            meta_keywords='pearl necklace, pendant, sterling silver',
-            tags='pearl,necklace,pendant',
-            synonyms='chain,neckwear'
-        ),
-        Product(
-            name='Gold Hoop Earrings',
-            price=22000.00,
-            description='Classic 22K gold hoop earrings, lightweight and timeless.',
-            category=earrings,
-            specs={'Material': '22K Gold', 'Type': 'Hoop', 'Length': '2.5cm', 'Closure': 'Lever Back'},
-            meta_title='Gold Hoop Earrings | 22K Yellow Gold',
-            meta_description='Shop classic 22K gold hoop earrings. Lightweight and perfect for daily wear.',
-            meta_keywords='gold earrings, hoop earrings, 22K gold',
-            tags='gold,hoops,earrings',
-            synonyms='hoop earrings,gold hoops'
-        )
-    ]
-    for p in samples:
-        p.slug = slugify(p.name)
-        db.session.add(p)
-    db.session.commit()
 
 # ---------- Routes ----------
 @app.route('/')
@@ -1368,7 +1294,7 @@ def api_products():
     products = Product.query.all()
     return jsonify([p.to_dict() for p in products])
 
-@app.route('/uploads/<filename>')
+@app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
@@ -1379,7 +1305,7 @@ def category_assets(filename):
 
 @app.route('/assets/<path:filename>')
 def assets_file(filename):
-    return send_from_directory(os.path.join('templates', 'assets'), filename)
+    return send_from_directory(os.path.join(_BASE_DIR, 'templates', 'assets'), filename)
 
 # ═══════════════════════════════════════════════════════════════════════
 #  WHOLESALE PORTAL ROUTES
@@ -1645,7 +1571,7 @@ with app.app_context():
         except Exception:
             conn.rollback()
     Category.seed_defaults()
-    seed_sample_products()
+    Category.seed_gifts()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)), debug=os.environ.get('FLASK_ENV') != 'production')
