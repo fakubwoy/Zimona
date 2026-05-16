@@ -17,10 +17,16 @@ _db_url = os.environ.get('DATABASE_URL', 'postgresql://postgres:postgres@localho
 # to a remote host (i.e. not a local docker-compose db).
 _is_local = 'localhost' in _db_url or '@db:' in _db_url
 app.config['SQLALCHEMY_DATABASE_URI'] = _db_url
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {} if _is_local else {
-    'connect_args': {'sslmode': 'require'},
+# pool_pre_ping tests each connection before use, discarding stale ones.
+# pool_recycle drops connections older than 280s — Railway's managed Postgres
+# silently kills idle SSL connections, causing 'EOF detected' errors without this.
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'pool_pre_ping': True,
-    'pool_recycle': 300,
+    'pool_recycle': 280,
+    'pool_timeout': 20,
+    'pool_size': 5,
+    'max_overflow': 2,
+    **({} if _is_local else {'connect_args': {'sslmode': 'require'}}),
 }
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Use absolute path so uploads work regardless of CWD (important on Railway/Docker)
