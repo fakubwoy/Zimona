@@ -2,194 +2,171 @@
 {% block title %}{{ product.name }} – Zimona Wholesale{% endblock %}
 
 {% block extra_styles %}
-/* ── BREADCRUMB ── */
 .breadcrumb { font-size: 12px; color: var(--muted); margin-bottom: 32px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .breadcrumb a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
 .breadcrumb a:hover { color: var(--maroon); }
 .breadcrumb-sep { color: var(--border); }
 
-/* ── PRODUCT LAYOUT ── */
-.product-layout {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 56px;
-    align-items: start;
-}
+/* layout */
+.product-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: start; }
 
-/* ── GALLERY ── */
-.gallery-main {
-    aspect-ratio: 1;
-    overflow: hidden;
-    background: var(--ivory);
-    border: 1px solid var(--border);
-    position: relative;
-}
+/* gallery */
+.gallery-main { aspect-ratio: 1; overflow: hidden; background: var(--ivory); border: 1px solid var(--border); position: relative; }
 .gallery-main img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.gallery-main .no-img {
-    width: 100%; height: 100%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 80px; color: var(--border);
-}
-.gallery-thumbs {
-    display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;
-}
-.gallery-thumb {
-    width: 72px; height: 72px;
-    object-fit: cover;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: border-color 0.2s;
-    display: block;
-    background: var(--ivory);
-}
+.gallery-main .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 80px; color: var(--border); }
+.gallery-thumbs { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.gallery-thumb { width: 72px; height: 72px; object-fit: cover; border: 2px solid transparent; cursor: pointer; transition: border-color 0.2s; display: block; background: var(--ivory); }
 .gallery-thumb.active, .gallery-thumb:hover { border-color: var(--maroon); }
-
-/* stock ribbon */
-.product-stock-ribbon {
-    position: absolute;
-    top: 16px; left: 16px;
-    font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
-    padding: 5px 14px;
-}
+.product-stock-ribbon { position: absolute; top: 16px; left: 16px; font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; padding: 5px 14px; }
 .product-stock-ribbon.in  { background: #2A6B3C; color: #fff; }
 .product-stock-ribbon.out { background: #C0392B; color: #fff; }
 
-/* ── RIGHT PANEL ── */
-.product-eyebrow {
-    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
-    color: var(--maroon); font-weight: 500; margin-bottom: 8px;
-}
-.product-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 32px; font-weight: 700; line-height: 1.15;
-    color: var(--charcoal); margin-bottom: 20px;
-}
-.product-id {
-    font-size: 11px; color: var(--muted); margin-bottom: 24px;
-    font-family: 'DM Sans', sans-serif;
-}
+/* right panel top */
+.product-eyebrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--maroon); font-weight: 500; margin-bottom: 8px; }
+.product-title { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; line-height: 1.15; color: var(--charcoal); margin-bottom: 14px; }
+.product-id { font-size: 11px; color: var(--muted); margin-bottom: 24px; }
 .product-id strong { color: var(--charcoal); font-weight: 500; }
 
-/* ── WEIGHT HIGHLIGHT BOX ── */
+/* ── WEIGHT + SILVER BOX ── */
 .weight-box {
     background: var(--charcoal);
     color: #fff;
     padding: 20px 24px;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
     gap: 16px;
 }
-.weight-stat { }
-.weight-stat-label {
-    font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase;
-    opacity: 0.55; margin-bottom: 4px;
+.weight-stat-label { font-size: 9px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.5; margin-bottom: 5px; }
+.weight-stat-value { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; line-height: 1; }
+.weight-stat-unit { font-size: 11px; opacity: 0.6; margin-left: 2px; font-family: 'DM Sans', sans-serif; font-weight: 300; }
+
+/* ── SILVER MULTIPLE BADGE ── */
+.silver-multiple-row {
+    display: flex; align-items: stretch; gap: 0;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    overflow: hidden;
 }
-.weight-stat-value {
+.silver-multiple-main {
+    flex: 1; padding: 14px 18px;
+    background: var(--ivory);
+    display: flex; align-items: center; gap: 14px;
+}
+.silver-multiple-number {
     font-family: 'Playfair Display', serif;
-    font-size: 24px; font-weight: 700; line-height: 1;
+    font-size: 28px; font-weight: 700; color: var(--charcoal); line-height: 1;
 }
-.weight-stat-unit {
-    font-size: 12px; opacity: 0.65; margin-left: 3px;
-    font-family: 'DM Sans', sans-serif; font-weight: 300;
+.silver-multiple-label { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.silver-multiple-label strong { display: block; font-size: 13px; color: var(--charcoal); font-weight: 500; margin-bottom: 2px; }
+.silver-multiple-breakdown {
+    background: #fff; padding: 14px 16px;
+    border-left: 1px solid var(--border);
+    font-size: 11px; color: var(--muted); line-height: 1.9;
+    min-width: 170px;
+}
+.silver-multiple-breakdown strong { color: var(--charcoal); }
+.silver-no-rate {
+    background: var(--ivory); border: 1px solid var(--border);
+    padding: 12px 16px; margin-bottom: 20px;
+    font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px;
 }
 
 /* ── PRICE BLOCK ── */
 .price-block {
-    background: var(--ivory);
-    border: 1px solid var(--border);
+    background: var(--ivory); border: 1px solid var(--border);
     border-left: 3px solid var(--maroon);
-    padding: 18px 20px;
-    margin-bottom: 28px;
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
+    padding: 16px 20px; margin-bottom: 24px;
+    display: flex; align-items: baseline; gap: 16px;
 }
-.price-mrp { font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700; color: var(--maroon); }
+.price-mrp { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: var(--maroon); }
 .price-label { font-size: 11px; color: var(--muted); }
-.price-note { font-size: 11px; color: var(--muted); margin-left: auto; text-align: right; line-height: 1.5; }
+.price-note { font-size: 11px; color: var(--muted); margin-left: auto; text-align: right; line-height: 1.6; }
 
-/* ── SPECS TABLE ── */
-.specs-section { margin-bottom: 28px; }
-.specs-title {
-    font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
-    color: var(--charcoal); margin-bottom: 12px;
-    padding-bottom: 8px; border-bottom: 1px solid var(--border);
+/* ── QUANTITY ENQUIRY ── */
+.enquiry-section {
+    background: #fff; border: 1px solid var(--border);
+    border-top: 3px solid var(--maroon);
+    padding: 20px 22px; margin-bottom: 24px;
 }
+.enquiry-title {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--charcoal); margin-bottom: 16px;
+}
+.qty-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.qty-label { font-size: 12px; color: var(--charcoal); font-weight: 500; white-space: nowrap; }
+.qty-controls { display: flex; align-items: center; border: 1px solid var(--border); background: var(--cream); }
+.qty-btn {
+    width: 40px; height: 40px; background: none; border: none;
+    font-size: 18px; color: var(--charcoal); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.qty-btn:hover { background: var(--maroon); color: #fff; }
+.qty-input {
+    width: 60px; height: 40px; border: none; border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border); background: #fff;
+    text-align: center; font-family: 'Playfair Display', serif;
+    font-size: 16px; font-weight: 700; color: var(--charcoal); outline: none;
+}
+.qty-presets { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+.qty-preset {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+    border: 1px solid var(--border); background: var(--cream);
+    color: var(--muted); padding: 5px 12px; cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.qty-preset:hover, .qty-preset.active { border-color: var(--maroon); color: var(--maroon); background: rgba(107,26,26,0.04); }
+.enquiry-note { font-size: 11px; color: var(--muted); margin-bottom: 16px; line-height: 1.6; }
+.btn-whatsapp {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; background: #25D366; color: #fff; border: none;
+    padding: 15px 24px; font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    cursor: pointer; text-decoration: none; transition: background 0.2s;
+}
+.btn-whatsapp:hover { background: #1da851; }
+.btn-whatsapp svg { flex-shrink: 0; }
+
+/* total value row */
+.qty-total-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--ivory); border: 1px solid var(--border);
+    padding: 10px 14px; margin-bottom: 14px; font-size: 13px;
+}
+.qty-total-label { color: var(--muted); }
+.qty-total-value { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--maroon); }
+
+/* specs */
+.specs-section { margin-bottom: 24px; }
+.specs-title { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--charcoal); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
 .specs-table { width: 100%; border-collapse: collapse; }
 .specs-table tr:nth-child(even) td { background: var(--ivory); }
-.specs-table td {
-    padding: 9px 12px;
-    font-size: 13px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-}
-.specs-table td:first-child {
-    font-weight: 500; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
-    color: var(--muted); width: 38%; white-space: nowrap;
-}
-.specs-table td:last-child { color: var(--charcoal); }
+.specs-table td { padding: 9px 12px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.specs-table td:first-child { font-weight: 500; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); width: 38%; white-space: nowrap; }
 
-/* ── SILVER PRICING CARD ── */
-.silver-card {
-    background: #fff;
-    border: 1px solid var(--border);
-    border-top: 3px solid var(--silver);
-    padding: 18px 20px;
-    margin-bottom: 24px;
-}
-.silver-card-title {
-    font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
-    color: var(--charcoal); margin-bottom: 12px;
-}
-.silver-formula {
-    font-size: 12px; color: var(--muted); line-height: 1.8;
-    background: var(--ivory); padding: 12px 14px; border: 1px solid var(--border);
-    font-family: monospace;
-}
+/* silver pricing card */
+.silver-card { background: #fff; border: 1px solid var(--border); border-top: 3px solid var(--silver); padding: 16px 20px; margin-bottom: 20px; }
+.silver-card-title { font-size: 10px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--charcoal); margin-bottom: 10px; }
+.silver-formula { font-size: 12px; color: var(--muted); line-height: 1.8; background: var(--ivory); padding: 12px 14px; border: 1px solid var(--border); font-family: monospace; }
 .silver-formula strong { color: var(--charcoal); }
 
-/* ── DESCRIPTION ── */
-.desc-section { margin-bottom: 28px; }
-.desc-text { font-size: 14px; line-height: 1.8; color: var(--muted); }
+/* description */
+.desc-section { margin-bottom: 24px; }
+.desc-text { font-size: 13px; line-height: 1.8; color: var(--muted); }
 
-/* ── ACTIONS ── */
-.action-strip {
-    display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px;
-}
-.btn-contact {
-    display: inline-block;
-    background: var(--maroon);
-    color: #fff;
-    border: none;
-    padding: 14px 32px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background 0.25s;
-}
-.btn-contact:hover { background: var(--maroon-deep); }
-.btn-back {
-    display: inline-block;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    padding: 13px 24px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 12px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    text-decoration: none;
-    transition: border-color 0.2s, color 0.2s;
-}
+/* back link */
+.btn-back { display: inline-block; border: 1px solid var(--border); color: var(--muted); padding: 11px 22px; font-family: 'DM Sans', sans-serif; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; text-decoration: none; transition: border-color 0.2s, color 0.2s; }
 .btn-back:hover { border-color: var(--charcoal); color: var(--charcoal); }
+
+@media (max-width: 900px) {
+    .product-layout { grid-template-columns: 1fr; gap: 28px; }
+    .silver-multiple-row { flex-direction: column; }
+    .silver-multiple-breakdown { border-left: none; border-top: 1px solid var(--border); min-width: unset; }
+}
 {% endblock %}
 
 {% block content %}
-<!-- Breadcrumb -->
 <div class="breadcrumb">
     <a href="/wholesale/catalog">Catalog</a>
     <span class="breadcrumb-sep">›</span>
@@ -202,7 +179,7 @@
 
 <div class="product-layout">
 
-    <!-- ── LEFT: GALLERY ── -->
+    <!-- LEFT: GALLERY -->
     <div>
         <div class="gallery-main" id="mainImg">
             <span class="product-stock-ribbon {% if product.is_in_stock %}in{% else %}out{% endif %}">
@@ -226,133 +203,157 @@
         {% endif %}
     </div>
 
-    <!-- ── RIGHT: DETAILS ── -->
+    <!-- RIGHT: DETAILS -->
     <div>
         <div class="product-eyebrow">{{ product.category.name if product.category else 'Product' }}</div>
         <h1 class="product-title">{{ product.name }}</h1>
         <div class="product-id">
             <strong>SKU:</strong> ZIMW-{{ '%04d' % product.id }}
-            &nbsp;&nbsp;|&nbsp;&nbsp;
-            <strong>Slug:</strong> {{ product.slug }}
+            &nbsp;·&nbsp;
+            {% if product.color %}<strong>Colour:</strong> {{ product.color }} &nbsp;·&nbsp;{% endif %}
+            {% if product.buying_for %}<strong>For:</strong> {{ product.buying_for }}{% endif %}
         </div>
 
-        <!-- ── WEIGHT HIGHLIGHT (most important for wholesale) ── -->
+        <!-- WEIGHT + MATERIAL BOX -->
         {% if product.silver_weight_grams or (product.specs and product.specs.get('Weight')) %}
         <div class="weight-box">
             {% if product.silver_weight_grams %}
-            <div class="weight-stat">
+            <div>
                 <div class="weight-stat-label">Net Silver Weight</div>
                 <div class="weight-stat-value">
                     {{ product.silver_weight_grams }}<span class="weight-stat-unit">g</span>
                 </div>
             </div>
             {% endif %}
-            {% if product.specs and product.specs.get('Weight') %}
-            <div class="weight-stat">
-                <div class="weight-stat-label">Listed Weight</div>
-                <div class="weight-stat-value" style="font-size:20px;">
-                    {{ product.specs.get('Weight') }}
-                </div>
+            {% if product.specs and product.specs.get('Weight') and product.specs.get('Weight') != (product.silver_weight_grams|string + 'g') %}
+            <div>
+                <div class="weight-stat-label">Gross Weight</div>
+                <div class="weight-stat-value" style="font-size:20px;">{{ product.specs.get('Weight') }}</div>
             </div>
             {% endif %}
             {% if product.specs and product.specs.get('Material') %}
-            <div class="weight-stat">
+            <div>
                 <div class="weight-stat-label">Material</div>
-                <div class="weight-stat-value" style="font-size:16px;font-family:'DM Sans',sans-serif;font-weight:400;">
+                <div class="weight-stat-value" style="font-size:15px;font-family:'DM Sans',sans-serif;font-weight:400;margin-top:4px;">
                     {{ product.specs.get('Material') }}
                 </div>
+            </div>
+            {% endif %}
+            {% if product.silver_multiplier %}
+            <div>
+                <div class="weight-stat-label">Making Multiplier</div>
+                <div class="weight-stat-value">{{ product.silver_multiplier }}<span class="weight-stat-unit">×</span></div>
             </div>
             {% endif %}
         </div>
         {% endif %}
 
-        <!-- ── PRICE ── -->
+        <!-- SILVER MULTIPLE — the key wholesale metric -->
+        {% if silver_multiple %}
+        <div class="silver-multiple-row">
+            <div class="silver-multiple-main">
+                <div>
+                    <div class="silver-multiple-number">{{ silver_multiple }}×</div>
+                </div>
+                <div class="silver-multiple-label">
+                    <strong>Silver Multiple</strong>
+                    Price is {{ silver_multiple }}× the raw silver cost of this item
+                </div>
+            </div>
+            <div class="silver-multiple-breakdown">
+                <div>Silver rate: <strong>₹{{ '{:,.0f}'.format(live_rate) }}/kg</strong></div>
+                <div>Our premium: <strong>₹{{ '{:,.0f}'.format(premium) }}/kg</strong></div>
+                <div>Effective: <strong>₹{{ '{:.2f}'.format(effective_rate_per_gram) }}/g</strong></div>
+                <div>Silver cost: <strong>₹{{ '{:,.0f}'.format(effective_rate_per_gram * product.silver_weight_grams|float) }}</strong></div>
+            </div>
+        </div>
+        {% elif product.silver_weight_grams %}
+        <div class="silver-no-rate">
+            <span>⚖</span>
+            <span>Silver multiple not available — ask admin to set today's silver rate in the dashboard.</span>
+        </div>
+        {% endif %}
+
+        <!-- PRICE -->
         <div class="price-block">
             <div>
                 <div class="price-mrp">₹{{ '{:,.0f}'.format(product.price|float) }}</div>
                 <div class="price-label">MRP (incl. GST)</div>
             </div>
             <div class="price-note">
-                Contact us for<br><strong>wholesale trade price</strong>
+                Contact us for<br><strong>trade price</strong>
             </div>
         </div>
 
-        <!-- ── SILVER LIVE PRICING (if enabled) ── -->
-        {% if product.silver_pricing_enabled %}
-        <div class="silver-card">
-            <div class="silver-card-title">⚖ Silver Rate Pricing Details</div>
-            <div class="silver-formula">
-                <strong>Formula:</strong> ((Live Rate + Premium) ÷ 1000) × Weight × {{ product.silver_multiplier or 1 }} + ₹{{ product.silver_fixed_addition or 0 }}<br>
-                <strong>Weight used:</strong> {{ product.silver_weight_grams }}g &nbsp;·&nbsp;
-                <strong>Multiplier:</strong> {{ product.silver_multiplier or 1 }} &nbsp;·&nbsp;
-                <strong>Fixed addition:</strong> ₹{{ product.silver_fixed_addition or 0 }}
-            </div>
-        </div>
-        {% endif %}
+        <!-- QUANTITY ENQUIRY -->
+        <div class="enquiry-section">
+            <div class="enquiry-title">📦 Bulk Enquiry</div>
 
-        <!-- ── SPECIFICATIONS TABLE ── -->
+            <div class="qty-row">
+                <span class="qty-label">Quantity:</span>
+                <div class="qty-controls">
+                    <button class="qty-btn" onclick="changeQty(-1)" type="button">−</button>
+                    <input class="qty-input" type="number" id="qtyInput" value="10" min="1" max="9999"
+                           oninput="updateTotal()">
+                    <button class="qty-btn" onclick="changeQty(1)" type="button">+</button>
+                </div>
+            </div>
+
+            <div class="qty-presets">
+                <span class="qty-label" style="font-size:11px;color:var(--muted);">Quick select:</span>
+                {% for qty in [10, 25, 50, 100] %}
+                <button class="qty-preset {% if qty == 10 %}active{% endif %}"
+                        onclick="setQty({{ qty }})" type="button">{{ qty }} pcs</button>
+                {% endfor %}
+            </div>
+
+            <div class="qty-total-row">
+                <span class="qty-total-label">Estimated MRP total</span>
+                <span class="qty-total-value" id="qtyTotal">
+                    ₹{{ '{:,.0f}'.format(product.price|float * 10) }}
+                </span>
+            </div>
+
+            <p class="enquiry-note">
+                Trade pricing varies by quantity. Send your enquiry on WhatsApp and we'll respond with your trade price within the hour.
+            </p>
+
+            <a id="waBtn" href="#" target="_blank" class="btn-whatsapp">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                Send Bulk Enquiry on WhatsApp
+            </a>
+        </div>
+
+        <!-- SPECS TABLE -->
         {% if product.specs %}
         <div class="specs-section">
             <div class="specs-title">Full Specifications</div>
             <table class="specs-table">
                 {% for key, val in product.specs.items() %}
                 {% if val %}
-                <tr>
-                    <td>{{ key }}</td>
-                    <td>{{ val }}</td>
-                </tr>
+                <tr><td>{{ key }}</td><td>{{ val }}</td></tr>
                 {% endif %}
                 {% endfor %}
-                <!-- Always show weight from dedicated field if exists -->
                 {% if product.silver_weight_grams and 'Weight' not in (product.specs or {}) %}
-                <tr>
-                    <td>Silver Weight</td>
-                    <td><strong>{{ product.silver_weight_grams }} g</strong></td>
-                </tr>
+                <tr><td>Silver Weight</td><td><strong>{{ product.silver_weight_grams }} g</strong></td></tr>
                 {% endif %}
             </table>
         </div>
         {% endif %}
 
-        <!-- ── DESCRIPTION ── -->
+
+
+        <!-- DESCRIPTION -->
         {% if product.description %}
         <div class="desc-section">
-            <div class="specs-title">Product Description</div>
+            <div class="specs-title">Description</div>
             <p class="desc-text">{{ product.description }}</p>
         </div>
         {% endif %}
 
-        <!-- ── TAGS / KEYWORDS ── -->
-        {% if product.tags %}
-        <div style="margin-bottom:24px;">
-            <div class="specs-title">Tags</div>
-            <div style="display:flex;flex-wrap:wrap;gap:6px;">
-                {% for tag in product.tags.split(',') %}
-                {% if tag.strip() %}
-                <span style="font-size:11px;background:var(--ivory);border:1px solid var(--border);padding:4px 10px;color:var(--muted);">{{ tag.strip() }}</span>
-                {% endif %}
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- ── ACTIONS ── -->
-        <div class="action-strip">
-            <a href="https://wa.me/?text=Hi%2C+I%27m+interested+in+{{ product.name|urlencode }}+(SKU:+ZIMW-{{ '%04d'|format(product.id) }})" 
-               target="_blank" class="btn-contact">
-                📲 Enquire on WhatsApp
-            </a>
-            <a href="/wholesale/catalog{% if product.category %}&cat={{ product.category_id }}{% endif %}" class="btn-back">
-                ← Back to Catalog
-            </a>
-        </div>
-
-        <!-- meta info strip -->
-        <div style="font-size:11px;color:var(--muted);padding-top:16px;border-top:1px solid var(--border);line-height:2;">
-            {% if product.meta_keywords %}<div>🔑 Keywords: {{ product.meta_keywords }}</div>{% endif %}
-            {% if product.color %}<div>🎨 Available in: {{ product.color }}</div>{% endif %}
-            {% if product.buying_for %}<div>👤 Buying for: {{ product.buying_for }}</div>{% endif %}
-        </div>
+        <a href="/wholesale/catalog{% if product.category %}?cat={{ product.category_id }}{% endif %}" class="btn-back">
+            ← Back to Catalog
+        </a>
     </div>
 
 </div>
@@ -360,6 +361,60 @@
 
 {% block scripts %}
 <script>
+const PRODUCT_NAME   = {{ product.name | tojson }};
+const PRODUCT_SKU    = "ZIMW-{{ '%04d' % product.id }}";
+const PRODUCT_PRICE  = {{ product.price | float }};
+const PRODUCT_WEIGHT = {{ product.silver_weight_grams | float if product.silver_weight_grams else 0 }};
+const SILVER_MULTIPLE = {{ silver_multiple if silver_multiple else 'null' }};
+
+function getQty() {
+    return Math.max(1, parseInt(document.getElementById('qtyInput').value) || 1);
+}
+
+function updateTotal() {
+    const qty = getQty();
+    const total = qty * PRODUCT_PRICE;
+    document.getElementById('qtyTotal').textContent =
+        '₹' + total.toLocaleString('en-IN', {maximumFractionDigits: 0});
+    updateWALink();
+    // update active preset
+    document.querySelectorAll('.qty-preset').forEach(b => {
+        b.classList.toggle('active', parseInt(b.textContent) === qty);
+    });
+}
+
+function changeQty(delta) {
+    const input = document.getElementById('qtyInput');
+    input.value = Math.max(1, getQty() + delta);
+    updateTotal();
+}
+
+function setQty(n) {
+    document.getElementById('qtyInput').value = n;
+    updateTotal();
+}
+
+function updateWALink() {
+    const qty   = getQty();
+    const total = (qty * PRODUCT_PRICE).toLocaleString('en-IN', {maximumFractionDigits: 0});
+    const multipleNote = SILVER_MULTIPLE ? `\nSilver Multiple: ${SILVER_MULTIPLE}×` : '';
+    const weightNote   = PRODUCT_WEIGHT  ? `\nSilver Weight: ${PRODUCT_WEIGHT}g` : '';
+    const msg = encodeURIComponent(
+        `Hi, I'm interested in a bulk order from Zimona Wholesale.\n\n` +
+        `Product: ${PRODUCT_NAME}\n` +
+        `SKU: ${PRODUCT_SKU}\n` +
+        `Quantity: ${qty} pcs\n` +
+        `MRP per piece: ₹${PRODUCT_PRICE.toLocaleString('en-IN')}\n` +
+        `Total MRP: ₹${total}` +
+        weightNote + multipleNote +
+        `\n\nPlease share the trade price for this quantity.`
+    );
+    document.getElementById('waBtn').href = `https://wa.me/?text=${msg}`;
+}
+
+// init
+updateTotal();
+
 function switchImg(thumb, filename) {
     document.getElementById('mainImgEl').src = '/uploads/' + filename;
     document.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));

@@ -1480,18 +1480,40 @@ def wholesale_catalog():
                 'products': uncategorised
             })
 
+    live_rate = float(Settings.get('silver_live_rate_per_kg', 0) or 0)
+    premium   = float(Settings.get('silver_premium_per_kg',   0) or 0)
+    eff_rate_per_gram = (live_rate + premium) / 1000.0
+
     return render_template('wholesale/catalog.html',
         buyer=buyer, products=products, categories=categories,
         grouped_products=grouped_products,
         active_cat=active_cat, q=q, sort_by=sort_by,
-        in_stock_only=in_stock_only, total=len(products))
+        in_stock_only=in_stock_only, total=len(products),
+        eff_rate_per_gram=eff_rate_per_gram)
 
 @app.route('/wholesale/product/<slug>')
 @wholesale_login_required
 def wholesale_product(slug):
     buyer   = WholesaleBuyer.query.get(session['wholesale_buyer_id'])
     product = Product.query.filter_by(slug=slug).first_or_404()
-    return render_template('wholesale/product.html', buyer=buyer, product=product)
+
+    # Pass live silver rate so template can compute silver multiple
+    live_rate = float(Settings.get('silver_live_rate_per_kg', 0) or 0)
+    premium   = float(Settings.get('silver_premium_per_kg',   0) or 0)
+    effective_rate_per_gram = (live_rate + premium) / 1000.0  # ₹ per gram
+
+    # Silver multiple = product price / (silver cost of the item)
+    silver_multiple = None
+    if effective_rate_per_gram > 0 and product.silver_weight_grams:
+        silver_cost = effective_rate_per_gram * float(product.silver_weight_grams)
+        if silver_cost > 0:
+            silver_multiple = round(float(product.price) / silver_cost, 2)
+
+    return render_template('wholesale/product.html',
+        buyer=buyer, product=product,
+        live_rate=live_rate, premium=premium,
+        effective_rate_per_gram=effective_rate_per_gram,
+        silver_multiple=silver_multiple)
 
 @app.route('/admin/wholesale/count')
 @login_required
@@ -1986,3 +2008,60 @@ def apiv1_category_create():
     db.session.add(cat)
     db.session.commit()
     return jsonify({'created': True, 'id': cat.id, 'name': cat.name, 'slug': cat.slug}), 201
+
+
+# ── POST /api/v1/settings/silver-rate ───────────────────────────────
+@app.route('/api/v1/settings/silver-rate', methods=['GET', 'POST'])
+@api_key_required
+def apiv1_silver_rate():
+    """
+    GET  — return current silver rate settings
+    POST — set silver rate, premium, and optionally auto-update all silver-priced products
+
+    Body (POST):
+    {
+        "live_rate_per_kg": 235000,   # required — live silver spot rate in ₹/kg
+        "premium_per_kg":   50000,    # optional — your making/premium charge in ₹/kg
+        "auto_update":      true      # optional — if true, recomputes price for all
+                                      #            silver-priced products immediately
+    }
+    """
+    if request.method == 'GET':
+        return jsonify({
+            'live_rate_per_kg': Settings.get('silver_live_rate_per_kg', 0),
+            'premium_per_kg':   Settings.get('silver_premium_per_kg',   0),
+            'auto_update':      Settings.get('silver_auto_update',       False),
+            'updated_at':       Settings.get('silver_rate_updated_at',   None),
+        })
+
+    data = request.get_json(silent=True)
+    if not data or data.get('live_rate_per_kg') is None:
+        return jsonify({'error': '"live_rate_per_kg" is required'}), 400
+
+    live_rate   = float(data['live_rate_per_kg'])
+    premium     = float(data.get('premium_per_kg', 0) or 0)
+    auto_update = bool(data.get('auto_update', False))
+
+    Settings.set('silver_live_rate_per_kg', live_rate)
+    Settings.set('silver_premium_per_kg',   premium)
+    Settings.set('silver_auto_update',       auto_update)
+    Settings.set('silver_rate_updated_at',   datetime.utcnow().isoformat())
+
+    updated_products = 0
+    if auto_update:
+        products = Product.query.filter_by(silver_pricing_enabled=True).all()
+        for p in products:
+            new_price = compute_silver_price(p, live_rate, premium)
+            if new_price is not None:
+                p.price = new_price
+                updated_products += 1
+        db.session.commit()
+
+    return jsonify({
+        'ok': True,
+        'live_rate_per_kg':   live_rate,
+        'premium_per_kg':     premium,
+        'auto_update':        auto_update,
+        'updated_products':   updated_products,
+        'updated_at':         Settings.get('silver_rate_updated_at'),
+    })

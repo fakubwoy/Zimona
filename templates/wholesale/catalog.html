@@ -146,42 +146,64 @@
     font-family: 'DM Sans', sans-serif;
 }
 
-/* card body */
-.card-body { padding: 13px 14px 14px; display: flex; flex-direction: column; flex: 1; }
-.card-sku { font-size: 10px; color: var(--muted); letter-spacing: 0.06em; margin-bottom: 4px; font-family: 'DM Sans', sans-serif; }
+/* ── CARD BODY ── */
+.card-body { display: flex; flex-direction: column; flex: 1; }
+
+/* name bar */
+.card-name-bar {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--border);
+}
+.card-sku { font-size: 9px; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 3px; font-family: 'DM Sans', sans-serif; text-transform: uppercase; }
 .card-name {
     font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600;
-    color: var(--charcoal); line-height: 1.3; margin-bottom: 8px;
-    text-decoration: none; display: block;
+    color: var(--charcoal); line-height: 1.25; text-decoration: none; display: block;
 }
 .card-name:hover { color: var(--maroon); }
 
-/* weight row — prominent */
-.card-weight-row {
-    display: flex; align-items: center; gap: 6px;
-    padding: 6px 10px; background: var(--ivory);
-    border: 1px solid var(--border); margin-bottom: 10px;
+/* stats row — weight | multiple | material in one clean line */
+.card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-bottom: 1px solid var(--border);
 }
-.card-weight-label { font-size: 9px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
-.card-weight-val { font-size: 14px; font-weight: 700; color: var(--charcoal); font-family: 'Playfair Display', serif; }
-.card-weight-unit { font-size: 10px; color: var(--muted); }
-
-/* specs */
-.card-specs { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
-.spec-tag {
-    font-size: 10px; background: var(--ivory); border: 1px solid var(--border);
-    padding: 2px 7px; color: var(--charcoal); letter-spacing: 0.02em; line-height: 1.5;
+.card-stat {
+    padding: 8px 12px;
+    border-right: 1px solid var(--border);
 }
+.card-stat:last-child { border-right: none; }
+.card-stat-label {
+    font-size: 9px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 2px;
+}
+.card-stat-value {
+    font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 700;
+    color: var(--charcoal); line-height: 1;
+}
+.card-stat-unit { font-size: 10px; color: var(--muted); font-family: 'DM Sans', sans-serif; margin-left: 1px; }
+/* multiple stat — accent background */
+.card-stat.multiple { background: var(--charcoal); }
+.card-stat.multiple .card-stat-label { color: rgba(255,255,255,0.5); }
+.card-stat.multiple .card-stat-value { color: #fff; }
+.card-stat.multiple .card-stat-unit { color: rgba(255,255,255,0.5); }
 
-/* card footer */
+/* material pill */
+.card-material {
+    padding: 6px 12px; border-bottom: 1px solid var(--border);
+    font-size: 11px; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.card-material strong { color: var(--charcoal); font-weight: 500; }
+
+/* footer: price + button */
 .card-footer {
     display: flex; align-items: center; justify-content: space-between;
-    padding-top: 10px; border-top: 1px solid var(--border); margin-top: auto; gap: 8px;
+    padding: 10px 12px; margin-top: auto; gap: 8px;
 }
-.card-price { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--maroon); line-height: 1.1; }
-.card-price-sub { font-size: 10px; color: var(--muted); font-weight: 300; font-family: 'DM Sans', sans-serif; margin-top: 1px; }
+.card-price { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: var(--maroon); line-height: 1; }
+.card-price-sub { font-size: 9px; color: var(--muted); font-weight: 300; font-family: 'DM Sans', sans-serif; margin-top: 2px; }
 .card-detail-btn {
-    font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+    font-size: 10px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
     color: var(--maroon); text-decoration: none; border: 1px solid var(--maroon);
     padding: 6px 10px; white-space: nowrap; transition: background 0.2s, color 0.2s; flex-shrink: 0;
 }
@@ -354,30 +376,42 @@
                             {% endif %}
                         </a>
                         <div class="card-body">
-                            <div class="card-sku">SKU · ZIMW-{{ '%04d' % product.id }}</div>
-                            <a href="/wholesale/product/{{ product.slug }}" class="card-name">{{ product.name }}</a>
-
-                            {% if product.silver_weight_grams %}
-                            <div class="card-weight-row">
-                                <span class="card-weight-label">Weight</span>
-                                <span class="card-weight-val">{{ product.silver_weight_grams }}</span>
-                                <span class="card-weight-unit">g silver</span>
+                            <div class="card-name-bar">
+                                <div class="card-sku">ZIMW-{{ '%04d' % product.id }}</div>
+                                <a href="/wholesale/product/{{ product.slug }}" class="card-name">{{ product.name }}</a>
                             </div>
-                            {% elif product.specs and product.specs.get('Weight') %}
-                            <div class="card-weight-row">
-                                <span class="card-weight-label">Weight</span>
-                                <span class="card-weight-val">{{ product.specs.get('Weight') }}</span>
-                            </div>
-                            {% endif %}
 
-                            {% if product.specs %}
-                            <div class="card-specs">
-                                {% for key, val in product.specs.items() %}
-                                {% if key in ['Material', 'Purity', 'Finish', 'Stone', 'Gemstone', 'Size'] and val %}
-                                <span class="spec-tag">{{ key }}: {{ val }}</span>
+                            <div class="card-stats">
+                                <!-- Weight stat -->
+                                <div class="card-stat">
+                                    <div class="card-stat-label">Weight</div>
+                                    <div class="card-stat-value">
+                                        {% if product.silver_weight_grams %}
+                                            {{ product.silver_weight_grams }}<span class="card-stat-unit">g</span>
+                                        {% elif product.specs and product.specs.get('Weight') %}
+                                            {{ product.specs.get('Weight') }}
+                                        {% else %}
+                                            <span style="font-size:12px;font-family:'DM Sans',sans-serif;font-weight:300;color:var(--muted);">—</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <!-- Silver multiple stat -->
+                                {% if eff_rate_per_gram > 0 and product.silver_weight_grams %}
+                                {% set silver_cost = eff_rate_per_gram * product.silver_weight_grams|float %}
+                                <div class="card-stat multiple">
+                                    <div class="card-stat-label">Silver ×</div>
+                                    <div class="card-stat-value">{{ (product.price|float / silver_cost)|round(1) }}<span class="card-stat-unit">×</span></div>
+                                </div>
+                                {% else %}
+                                <div class="card-stat">
+                                    <div class="card-stat-label">MRP</div>
+                                    <div class="card-stat-value" style="font-size:13px;">₹{{ '{:,.0f}'.format(product.price|float) }}</div>
+                                </div>
                                 {% endif %}
-                                {% endfor %}
                             </div>
+
+                            {% if product.specs and product.specs.get('Material') %}
+                            <div class="card-material"><strong>{{ product.specs.get('Material') }}</strong></div>
                             {% endif %}
 
                             <div class="card-footer">
@@ -422,30 +456,40 @@
                         {% endif %}
                     </a>
                     <div class="card-body">
-                        <div class="card-sku">SKU · ZIMW-{{ '%04d' % product.id }}</div>
-                        <a href="/wholesale/product/{{ product.slug }}" class="card-name">{{ product.name }}</a>
-
-                        {% if product.silver_weight_grams %}
-                        <div class="card-weight-row">
-                            <span class="card-weight-label">Weight</span>
-                            <span class="card-weight-val">{{ product.silver_weight_grams }}</span>
-                            <span class="card-weight-unit">g silver</span>
+                        <div class="card-name-bar">
+                            <div class="card-sku">ZIMW-{{ '%04d' % product.id }}</div>
+                            <a href="/wholesale/product/{{ product.slug }}" class="card-name">{{ product.name }}</a>
                         </div>
-                        {% elif product.specs and product.specs.get('Weight') %}
-                        <div class="card-weight-row">
-                            <span class="card-weight-label">Weight</span>
-                            <span class="card-weight-val">{{ product.specs.get('Weight') }}</span>
-                        </div>
-                        {% endif %}
 
-                        {% if product.specs %}
-                        <div class="card-specs">
-                            {% for key, val in product.specs.items() %}
-                            {% if key in ['Material', 'Purity', 'Finish', 'Stone', 'Gemstone', 'Size'] and val %}
-                            <span class="spec-tag">{{ key }}: {{ val }}</span>
+                        <div class="card-stats">
+                            <div class="card-stat">
+                                <div class="card-stat-label">Weight</div>
+                                <div class="card-stat-value">
+                                    {% if product.silver_weight_grams %}
+                                        {{ product.silver_weight_grams }}<span class="card-stat-unit">g</span>
+                                    {% elif product.specs and product.specs.get('Weight') %}
+                                        {{ product.specs.get('Weight') }}
+                                    {% else %}
+                                        <span style="font-size:12px;font-family:'DM Sans',sans-serif;font-weight:300;color:var(--muted);">—</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% if eff_rate_per_gram > 0 and product.silver_weight_grams %}
+                            {% set silver_cost = eff_rate_per_gram * product.silver_weight_grams|float %}
+                            <div class="card-stat multiple">
+                                <div class="card-stat-label">Silver ×</div>
+                                <div class="card-stat-value">{{ (product.price|float / silver_cost)|round(1) }}<span class="card-stat-unit">×</span></div>
+                            </div>
+                            {% else %}
+                            <div class="card-stat">
+                                <div class="card-stat-label">MRP</div>
+                                <div class="card-stat-value" style="font-size:13px;">₹{{ '{:,.0f}'.format(product.price|float) }}</div>
+                            </div>
                             {% endif %}
-                            {% endfor %}
                         </div>
+
+                        {% if product.specs and product.specs.get('Material') %}
+                        <div class="card-material"><strong>{{ product.specs.get('Material') }}</strong></div>
                         {% endif %}
 
                         <div class="card-footer">
