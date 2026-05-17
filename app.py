@@ -306,10 +306,10 @@ def index():
         {'icon': '◈', 'title': 'Always Cadmium Free'},
     ])
     budget_ranges = Settings.get('budget_ranges', [
-        {'label': 'Gifts Under ₹1499', 'url': '/search?product_type=Gifts&min_price=0&max_price=1499'},
-        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?product_type=Gifts&min_price=1499&max_price=2499'},
-        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?product_type=Gifts&min_price=2499&max_price=4999'},
-        {'label': 'Gifts Above ₹4999', 'url': '/search?product_type=Gifts&min_price=4999'},
+        {'label': 'Jewellery Under ₹1499', 'url': '/search?min_price=0&max_price=1499'},
+        {'label': 'Jewellery ₹1499–₹2499', 'url': '/search?min_price=1499&max_price=2499'},
+        {'label': 'Jewellery ₹2499–₹4999', 'url': '/search?min_price=2499&max_price=4999'},
+        {'label': 'Jewellery Above ₹4999', 'url': '/search?min_price=4999'},
     ])
     return render_template('index.html', categories=categories, products=featured,
                            new_arrivals=new_arrivals,
@@ -940,10 +940,10 @@ def admin_homepage():
         flash('Homepage settings saved.', 'success')
         return redirect(url_for('admin_homepage'))
     budget_ranges = Settings.get('budget_ranges', [
-        {'label': 'Gifts Under ₹1499', 'url': '/search?product_type=Gifts&min_price=0&max_price=1499'},
-        {'label': 'Gifts ₹1499–₹2499', 'url': '/search?product_type=Gifts&min_price=1499&max_price=2499'},
-        {'label': 'Gifts ₹2499–₹4999', 'url': '/search?product_type=Gifts&min_price=2499&max_price=4999'},
-        {'label': 'Gifts Above ₹4999', 'url': '/search?product_type=Gifts&min_price=4999'},
+        {'label': 'Jewellery Under ₹1499', 'url': '/search?min_price=0&max_price=1499'},
+        {'label': 'Jewellery ₹1499–₹2499', 'url': '/search?min_price=1499&max_price=2499'},
+        {'label': 'Jewellery ₹2499–₹4999', 'url': '/search?min_price=2499&max_price=4999'},
+        {'label': 'Jewellery Above ₹4999', 'url': '/search?min_price=4999'},
     ])
     brand_promises = Settings.get('brand_promises', [
         {'icon': '925', 'title': 'Fine Silver Jewellery'},

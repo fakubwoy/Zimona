@@ -50,7 +50,7 @@
             <div id="budgetContainer">
                 {% for r in budget_ranges %}
                 <div class="editable-row-2">
-                    <input type="text" name="budget_label" value="{{ r.label }}" class="field-input" placeholder="Label e.g. Gifts Under ₹1499">
+                    <input type="text" name="budget_label" value="{{ r.label }}" class="field-input" placeholder="Label e.g. Jewellery Under ₹1499">
                     <input type="text" name="budget_url" value="{{ r.url }}" class="field-input" placeholder="URL e.g. /search?q=silver">
                 </div>
                 {% endfor %}
@@ -77,7 +77,7 @@ function addBudgetRow() {
     const c = document.getElementById('budgetContainer');
     const div = document.createElement('div');
     div.className = 'editable-row-2';
-    div.innerHTML = `<input type="text" name="budget_label" value="" class="field-input" placeholder="Label e.g. Gifts Under ₹1499"><input type="text" name="budget_url" value="" class="field-input" placeholder="URL e.g. /search?q=silver">`;
+    div.innerHTML = `<input type="text" name="budget_label" value="" class="field-input" placeholder="Label e.g. Jewellery Under ₹1499"><input type="text" name="budget_url" value="" class="field-input" placeholder="URL e.g. /search?q=silver">`;
     c.appendChild(div);
 }
 </script>
