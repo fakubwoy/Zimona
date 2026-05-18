@@ -38,9 +38,9 @@ jewellery-catalog/
 - Full‑text search across product fields and tags
 - PostgreSQL persistence with Docker volumes
 
-## Default Categories
+## Categories
 
-Rings, Necklaces, Earrings, Bracelets, Bangles, Chains
+Anklets, Toe Rings — Rakhis coming soon (add via admin panel when ready)
 
 ## Environment Variables
 
@@ -53,6 +53,7 @@ Rings, Necklaces, Earrings, Bracelets, Bangles, Chains
 | `GEMINI_API_KEY`   | Google Gemini API key        |
 | `ADMIN_USERNAME`   | Admin panel username         |
 | `ADMIN_PASSWORD`   | Admin panel password         |
+| `CATALOG_API_KEY`  | Catalog population API key   |
 
 ## Admin Access
 

@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Zimona – Buy 925 Sterling Silver Jewellery Online India{% endblock %}
-{% block meta_description %}Shop handcrafted 925 sterling silver jewellery online at Zimona. Rings, necklaces, earrings, bracelets, bangles and anklets. 100% genuine, cadmium-free. Free shipping above Rs.1999.{% endblock %}
-{% block meta_keywords %}925 sterling silver jewellery India, buy silver jewellery online, silver rings, silver necklaces, silver earrings, silver bracelets, silver anklets, handcrafted silver jewellery{% endblock %}
+{% block title %}Zimona – Buy 925 Sterling Silver Anklets & Toe Rings Online India{% endblock %}
+{% block meta_description %}Shop handcrafted 925 sterling silver anklets and toe rings at Zimona. Delicate chains, charm anklets, stacking toe rings and more. 100% genuine, cadmium-free. Free shipping above Rs.1999.{% endblock %}
+{% block meta_keywords %}925 sterling silver anklets India, silver toe rings, buy silver anklets online, payal silver, silver bichhiya, handcrafted silver anklets, toe rings online India{% endblock %}
 {% block canonical %}<link rel="canonical" href="{{ request.url_root }}">{% endblock %}
-{% block og_title %}Zimona – Buy 925 Sterling Silver Jewellery Online India{% endblock %}
-{% block og_description %}Handcrafted 925 sterling silver jewellery. Rings, necklaces, earrings, bracelets & anklets. Genuine, cadmium-free. Free shipping above Rs.1999.{% endblock %}
-{% block twitter_title %}Zimona – Buy 925 Sterling Silver Jewellery Online India{% endblock %}
-{% block twitter_description %}Handcrafted 925 sterling silver jewellery. Free shipping above Rs.1999.{% endblock %}
+{% block og_title %}Zimona – Buy 925 Sterling Silver Anklets & Toe Rings Online India{% endblock %}
+{% block og_description %}Handcrafted 925 sterling silver anklets and toe rings. Delicate, cadmium-free, hallmarked. Free shipping above Rs.1999.{% endblock %}
+{% block twitter_title %}Zimona – Buy 925 Sterling Silver Anklets & Toe Rings Online India{% endblock %}
+{% block twitter_description %}Handcrafted 925 sterling silver anklets and toe rings. Free shipping above Rs.1999.{% endblock %}
 {% block jsonld %}
 <script type="application/ld+json">
 {
@@ -27,7 +27,7 @@
   "@type": "Organization",
   "name": "Zimona",
   "url": "{{ request.url_root }}",
-  "description": "Handcrafted 925 sterling silver jewellery — rings, necklaces, earrings, bracelets and anklets.",
+  "description": "Handcrafted 925 sterling silver anklets and toe rings — delicate, hallmarked, cadmium-free.",
   "contactPoint": { "@type": "ContactPoint", "contactType": "customer service", "email": "contact@zimona.com" }
 }
 </script>
@@ -62,11 +62,10 @@
     }
     .hero-ornament { animation: shimmerFloat 4s ease-in-out infinite; }
 
-    /* Category photo cards — 4×2 compact grid */
+    /* Category photo cards — auto-fit so any number looks good */
     .cat-photo-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        grid-template-rows: repeat(2, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
         gap: 14px;
         margin-top: 32px;
     }
@@ -224,6 +223,19 @@
         grid-template-columns: 1fr 1fr;
         gap: 60px;
         align-items: center;
+    }
+    .hero-slide-content.full-height-img {
+        padding-top: 0;
+        padding-bottom: 0;
+        align-items: stretch;
+        height: 100%;
+    }
+    .hero-slide-content.full-height-img > div:first-child {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding-top: 80px;
+        padding-bottom: 80px;
     }
     /* Carousel nav dots */
     .carousel-dots {
@@ -418,7 +430,7 @@
     .view-all-link:hover { background: var(--maroon); color: #fff; }
     .products-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
         gap: 24px;
     }
     .product-card {
@@ -494,18 +506,7 @@
     z-index: 2;
     background-image: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.06) 0%, transparent 50%);
 }
-.budget-maroon-ornament {
-    font-size: 52px;
-    color: rgba(255, 235, 200, 0.85);
-    margin-bottom: 20px;
-    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    transition: transform 0.3s;
-    line-height: 1;
-}
-.budget-card-maroon:hover .budget-maroon-ornament {
-    transform: scale(1.15) rotate(3deg);
-    color: #FFEFD5;
-}
+
 .budget-maroon-label {
     font-family: 'Playfair Display', serif;
     font-size: 22px;
@@ -575,11 +576,9 @@
    INDEX PAGE RESPONSIVE
 ══════════════════════════════════════ */
 
-/* Category grid — 2×4 on tablet, horizontal scroll on mobile */
+/* Category grid — auto on tablet, horizontal scroll on mobile */
 @media (max-width: 900px) {
     .cat-photo-grid {
-        grid-template-columns: repeat(2, 1fr);
-        grid-template-rows: repeat(4, 1fr);
         gap: 14px;
         margin-top: 28px;
     }
@@ -680,7 +679,7 @@
 <!-- HERO CAROUSEL -->
 <div class="hero-carousel" id="heroCarousel">
 
-    <!-- SLIDE 1 — New Collection -->
+    <!-- SLIDE 1 — Anklets Collection -->
     <div class="hero-slide active">
         <div class="hero-slide-bg" style="background: linear-gradient(135deg, var(--maroon-deep) 0%, var(--maroon) 55%, #8B2222 100%);">
             <div style="position:absolute;inset:0;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22%3E%3Cpath d=%22M30 5L35 20H50L38 29L43 44L30 35L17 44L22 29L10 20H25Z%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.04)%22 stroke-width=%221%22/%3E%3C/svg%3E');background-repeat:repeat;"></div>
@@ -690,21 +689,21 @@
                 <p class="hero-eyebrow">New Collection 2025</p>
                 <h1 class="hero-title">
                     <span>925 Pure Silver</span>
-                    Adorned in<br>Timeless Silver
+                    Grace with Every<br>Step You Take
                 </h1>
-                <p class="hero-sub">Handcrafted sterling silver jewellery that celebrates every woman. Certified purity, exceptional craftsmanship, and designs that last a lifetime.</p>
+                <p class="hero-sub">Handcrafted sterling silver anklets for every occasion — delicate chains, charm payals, and stacking styles. Certified purity, exceptional craftsmanship.</p>
                 <div class="hero-ctas">
-                    <a href="/search" class="btn-white">Shop Now</a>
-                    <a href="/search?q=New" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">New Arrivals</a>
+                    <a href="/category/anklets" class="btn-white">Shop Anklets</a>
+                    <a href="/search?q=anklet" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">New Arrivals</a>
                 </div>
             </div>
             <div class="slide-img-panel" style="overflow:hidden;">
-                <img src="/assets/jewlery.png" alt="Silver earrings collection" style="width:800px;max-width:100%;height:760px;object-fit:contain;object-position:center;display:block;flex-shrink:0;filter:drop-shadow(0 12px 48px rgba(0,0,0,0.45));animation:heroImgIn 0.75s 0.5s cubic-bezier(0.4,0,0.2,1) both;" loading="eager" fetchpriority="high">
+                <img src="/assets/jewlery.png" alt="Silver anklets collection" style="width:800px;max-width:100%;height:760px;object-fit:contain;object-position:center;display:block;flex-shrink:0;filter:drop-shadow(0 12px 48px rgba(0,0,0,0.45));animation:heroImgIn 0.75s 0.5s cubic-bezier(0.4,0,0.2,1) both;" loading="eager" fetchpriority="high">
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 2 — Earrings Collection -->
+    <!-- SLIDE 2 — Toe Rings Collection -->
     <div class="hero-slide" style="position:absolute;inset:0;">
         <div class="hero-slide-bg" style="background: linear-gradient(135deg, #1A1A2E 0%, #3D0D3D 55%, #6B1A4A 100%);">
             <div style="position:absolute;inset:0;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22 viewBox=%220 0 40 40%22%3E%3Ccircle cx=%2220%22 cy=%2220%22 r=%2212%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.04)%22 stroke-width=%221%22/%3E%3C/svg%3E');background-repeat:repeat;"></div>
@@ -714,45 +713,45 @@
                 <p class="hero-eyebrow">Exclusively Crafted</p>
                 <h1 class="hero-title" style="font-size:clamp(36px,4.5vw,58px);">
                     <span>Oxidised 925 Silver</span>
-                    Statement<br>Earrings
+                    Tiny Rings,<br>Big Elegance
                 </h1>
-                <p class="hero-sub">From delicate studs to bold jhumkas — our earring collection is designed to frame your beauty. Each pair hallmarked for purity.</p>
+                <p class="hero-sub">From classic plain bands to oxidised floral bichhiyas — our toe ring collection pairs tradition with modern craft. Each piece hallmarked for purity.</p>
                 <div class="hero-ctas">
-                    <a href="/category/earrings" class="btn-white">Shop Earrings</a>
-                    <a href="/search?q=Jhumka" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Shop Jhumkas</a>
+                    <a href="/category/toe-rings" class="btn-white">Shop Toe Rings</a>
+                    <a href="/search?q=bichhiya" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Shop Bichhiyas</a>
                 </div>
             </div>
             <div class="slide-img-panel" style="overflow:hidden;">
-                <img src="/assets/earrings.png" alt="Silver earrings collection" style="width:600px;max-width:100%;height:560px;object-fit:contain;object-position:center;display:block;flex-shrink:0;filter:drop-shadow(0 12px 48px rgba(0,0,0,0.45));">
+                <img src="/assets/earrings.png" alt="Silver toe rings collection" style="width:600px;max-width:100%;height:560px;object-fit:contain;object-position:center;display:block;flex-shrink:0;filter:drop-shadow(0 12px 48px rgba(0,0,0,0.45));">
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 3 — Rings Collection -->
+    <!-- SLIDE 3 — Rakhis Coming Soon -->
     <div class="hero-slide" style="position:absolute;inset:0;">
         <div class="hero-slide-bg" style="background: linear-gradient(135deg, #0D2137 0%, #1A3A5C 55%, #1E5080 100%);">
             <div style="position:absolute;inset:0;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2250%22 height=%2250%22 viewBox=%220 0 50 50%22%3E%3Crect x=%2210%22 y=%2210%22 width=%2230%22 height=%2230%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.04)%22 stroke-width=%221%22 transform=%22rotate(45 25 25)%22/%3E%3C/svg%3E');background-repeat:repeat;"></div>
         </div>
-        <div class="hero-slide-content">
+        <div class="hero-slide-content full-height-img">
             <div>
-                <p class="hero-eyebrow">Signature Series</p>
+                <p class="hero-eyebrow">Coming Soon</p>
                 <h1 class="hero-title" style="font-size:clamp(36px,4.5vw,58px);">
-                    <span>Handcrafted Rings</span>
-                    Wear Your<br>Story in Silver
+                    <span>925 Silver Rakhis</span>
+                    Celebrate the Bond<br>in Pure Silver
                 </h1>
-                <p class="hero-sub">Stackable bands, gemstone rings, and intricately carved cocktail rings. Discover a ring for every finger and every mood.</p>
+                <p class="hero-sub">Something special is on its way — handcrafted 925 sterling silver rakhis for a gift as precious as the bond they celebrate. Stay tuned.</p>
                 <div class="hero-ctas">
-                    <a href="/category/rings" class="btn-white">Shop Rings</a>
-                    <a href="/search?q=Gemstone" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Gemstone Rings</a>
+                    <a href="/search" class="btn-white">Shop All</a>
+                    <a href="/search?q=silver" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Explore Collection</a>
                 </div>
             </div>
-            <div class="slide-img-panel" style="overflow:hidden;">
-                <img src="/assets/rings.png" alt="Silver rings collection" style="width:400px;max-width:100%;height:360px;object-fit:contain;object-position:center;display:block;flex-shrink:0;filter:drop-shadow(0 12px 48px rgba(0,0,0,0.45));">
+            <div style="position:absolute;top:0;right:0;width:50%;height:100%;overflow:hidden;">
+                <img src="/assets/rings.png" alt="Silver rakhis coming soon" style="width:100%;height:100%;object-fit:contain;object-position:center;display:block;">
             </div>
         </div>
     </div>
 
-    <!-- SLIDE 4 — Necklaces -->
+    <!-- SLIDE 4 — Anklets Styling -->
     <div class="hero-slide" style="position:absolute;inset:0;">
         <div class="hero-slide-bg" style="background: linear-gradient(135deg, #1A130D 0%, #3D2B10 55%, #6B4A1A 100%);">
             <div style="position:absolute;inset:0;background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22%3E%3Cpath d=%22M30 10 Q50 30 30 50 Q10 30 30 10Z%22 fill=%22none%22 stroke=%22rgba(255,255,255,0.04)%22 stroke-width=%221%22/%3E%3C/svg%3E');background-repeat:repeat;"></div>
@@ -761,17 +760,17 @@
             <div>
                 <p class="hero-eyebrow">Zimona Signature</p>
                 <h1 class="hero-title" style="font-size:clamp(36px,4.5vw,58px);">
-                    <span>Silver Necklaces</span>
-                    Grace Around<br>Every Neckline
+                    <span>Charm Payals</span>
+                    Stack, Layer,<br>Shine at Every Step
                 </h1>
-                <p class="hero-sub">From minimalist chains to layered temple-inspired pendants — our necklace collection is crafted to elevate every outfit, every occasion.</p>
+                <p class="hero-sub">From simple chain anklets to jingling charm payals — crafted to complement every kurta, saree, and summer dress. Genuine 925 silver, always.</p>
                 <div class="hero-ctas">
-                    <a href="/category/necklaces" class="btn-white">Shop Necklaces</a>
-                    <a href="/search?q=Pendant" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Pendant Collection</a>
+                    <a href="/category/anklets" class="btn-white">Shop Anklets</a>
+                    <a href="/search?q=payal" class="btn-outline" style="border-color:rgba(255,255,255,0.5);color:#fff;">Charm Payals</a>
                 </div>
             </div>
             <div class="slide-img-panel" style="overflow:hidden;">
-                <img src="/assets/necklace.png" alt="Silver necklace collection" style="width:600px;max-width:100%;height:560px;object-fit:contain;object-position:center;display:block;flex-shrink:0;filter:drop-shadow(0 12px 48px rgba(0,0,0,0.45));">
+                <img src="/assets/necklace.png" alt="Silver anklet collection" style="width:600px;max-width:100%;height:560px;object-fit:contain;object-position:center;display:block;flex-shrink:0;filter:drop-shadow(0 12px 48px rgba(0,0,0,0.45));">
             </div>
         </div>
     </div>
@@ -793,54 +792,183 @@
     </div>
 </div>
 
-<!-- SHOP BY COLLECTION -->
-<div class="section-block reveal">
-    <div class="section-header">
-        <p class="section-eyebrow">Browse by</p>
-        <h2 class="section-title">Our Categories</h2>
-        <p class="section-sub">Discover the most trending categories in our collection</p>
+<!-- SHOP BY CATEGORY — full-bleed split panels (driven by admin categories) -->
+{% set _cat_gradients = [
+    'linear-gradient(160deg, var(--maroon-deep) 0%, var(--maroon) 60%, #8B2222 100%)',
+    'linear-gradient(160deg, #1A1A2E 0%, #3D0D3D 60%, #6B1A4A 100%)',
+    'linear-gradient(160deg, #0D2137 0%, #1A3A5C 60%, #1E5080 100%)',
+    'linear-gradient(160deg, #1A130D 0%, #3D2B10 60%, #6B4A1A 100%)',
+    'linear-gradient(160deg, #0D1A0D 0%, #1A3D1A 60%, #2A6B2A 100%)',
+    'linear-gradient(160deg, #1A1A0D 0%, #3D3D10 60%, #6B6B1A 100%)'
+] %}
+{% if categories %}
+<div class="reveal" style="margin-bottom:0;">
+    <div style="text-align:center;padding:56px 40px 36px;">
+        <p class="section-eyebrow">What We Make</p>
+        <h2 class="section-title">Shop by Category</h2>
+        <p class="section-sub">Every piece handcrafted in 925 sterling silver</p>
     </div>
-    <div class="collections-grid">
-        <a href="/category/necklaces" class="collection-card tall">
-            <div class="collection-card-bg">
-                <img src="/assets/necklace-pattern.png" alt="" aria-hidden="true">
-            </div>
-            <div class="collection-card-content">
-                <p class="collection-eyebrow">Zimona Exclusive</p>
-                <h3 class="collection-name">Silver Necklaces</h3>
-                <span class="collection-link">Shop Now →</span>
-            </div>
-        </a>
-        <a href="/category/earrings" class="collection-card tall">
-            <div class="collection-card-bg" style="background: linear-gradient(135deg, #3D0F0F 0%, #7A2020 100%);">
-                <img src="/assets/earring-pattern.png" alt="" aria-hidden="true">
-            </div>
-            <div class="collection-card-content">
-                <p class="collection-eyebrow">Oxidised 925 Silver</p>
-                <h3 class="collection-name">Earring Collection</h3>
-                <span class="collection-link">Shop Now →</span>
-            </div>
-        </a>
-    </div>
-
-    <!-- CATEGORIES PHOTO GRID -->
-    <div class="cat-photo-grid">
+    <div class="cat-split-grid" style="grid-template-columns: repeat({{ [categories|length, 4]|min }}, 1fr);">
         {% for cat in categories %}
-        <a href="/category/{{ cat.slug }}" class="cat-photo-card">
-            {% if cat.image %}
-            <img src="/assets/categories/{{ cat.image }}" alt="{{ cat.name }}" class="cat-photo-img" loading="lazy">
-            {% else %}
-            <div class="cat-photo-img cat-photo-fallback">
-                <span>◇</span>
+        <a href="/category/{{ cat.slug }}" class="cat-split-panel">
+            <div class="cat-split-bg" style="background: {{ _cat_gradients[loop.index0 % _cat_gradients|length] }};">
+                {% if cat.image %}
+                <img src="/assets/categories/{{ cat.image }}" alt="{{ cat.name }}" style="width:100%;height:100%;object-fit:cover;opacity:0.55;mix-blend-mode:luminosity;">
+                {% endif %}
             </div>
-            {% endif %}
-            <div class="cat-photo-overlay">
-                <span class="cat-photo-name">{{ cat.name }}</span>
+            <div class="cat-split-content">
+                <p class="cat-split-eyebrow">Zimona Collection</p>
+                <h3 class="cat-split-name">{{ cat.name }}</h3>
+                {% if cat.description %}
+                <p class="cat-split-desc">{{ cat.description }}</p>
+                {% else %}
+                <p class="cat-split-desc">Explore our handcrafted 925 sterling silver {{ cat.name|lower }} — hallmarked, genuine, and cadmium-free.</p>
+                {% endif %}
+                <span class="cat-split-cta">Shop {{ cat.name }} →</span>
             </div>
         </a>
         {% endfor %}
     </div>
 </div>
+{% endif %}
+
+<style>
+    .cat-split-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        height: 460px;
+    }
+    .cat-split-panel {
+        position: relative;
+        overflow: hidden;
+        text-decoration: none;
+        display: flex;
+        align-items: flex-end;
+        transition: flex 0.5s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cat-split-panel:not(.cat-split-soon):hover {
+        flex: 1.35;
+    }
+    .cat-split-bg {
+        position: absolute;
+        inset: 0;
+        transition: transform 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cat-split-panel:not(.cat-split-soon):hover .cat-split-bg {
+        transform: scale(1.04);
+    }
+    .cat-split-soon {
+        cursor: default;
+        filter: saturate(0.7);
+    }
+    .cat-split-content {
+        position: relative;
+        z-index: 2;
+        padding: 32px 28px;
+        background: linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.18) 55%, transparent 100%);
+        width: 100%;
+        transition: background 0.4s;
+    }
+    .cat-split-panel:not(.cat-split-soon):hover .cat-split-content {
+        background: linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.28) 60%, transparent 100%);
+    }
+
+    .cat-split-eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,0.6);
+        margin-bottom: 8px;
+        display: block;
+    }
+    .cat-split-name {
+        font-family: 'Playfair Display', serif;
+        font-size: clamp(22px, 2.2vw, 30px);
+        font-weight: 700;
+        font-style: italic;
+        color: #fff;
+        margin-bottom: 10px;
+        line-height: 1.15;
+    }
+    .cat-split-desc {
+        font-size: 13px;
+        line-height: 1.65;
+        color: rgba(255,255,255,0.6);
+        margin-bottom: 20px;
+        max-width: 260px;
+        display: block;
+        opacity: 0;
+        transform: translateY(8px);
+        transition: opacity 0.4s 0.05s, transform 0.4s 0.05s;
+    }
+    .cat-split-panel:not(.cat-split-soon):hover .cat-split-desc {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .cat-split-soon .cat-split-desc {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .cat-split-cta {
+        display: inline-block;
+        background: #fff;
+        color: var(--maroon);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        padding: 9px 20px;
+        opacity: 0;
+        transform: translateY(6px);
+        transition: opacity 0.35s 0.1s, transform 0.35s 0.1s, background 0.25s, color 0.25s;
+    }
+    .cat-split-panel:not(.cat-split-soon):hover .cat-split-cta {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .cat-split-badge {
+        display: inline-block;
+        border: 1px solid rgba(255,255,255,0.3);
+        color: rgba(255,255,255,0.5);
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        padding: 7px 16px;
+    }
+    .cat-split-lock {
+        position: absolute;
+        top: 18px;
+        right: 18px;
+        z-index: 3;
+    }
+
+    /* Dividers between panels */
+    .cat-split-panel + .cat-split-panel {
+        border-left: 1px solid rgba(255,255,255,0.1);
+    }
+
+    @media (max-width: 768px) {
+        .cat-split-grid {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+        .cat-split-panel {
+            height: 240px;
+            flex: none !important;
+        }
+        .cat-split-panel + .cat-split-panel {
+            border-left: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .cat-split-desc { opacity: 1 !important; transform: none !important; }
+        .cat-split-cta  { opacity: 1 !important; transform: none !important; }
+    }
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .cat-split-grid { height: 360px; }
+        .cat-split-name { font-size: 20px; }
+    }
+</style>
 
 <!-- TOP SELLERS -->
 <div class="products-section reveal">
@@ -921,8 +1049,7 @@
         {% for range in budget_ranges %}
         <a href="{{ range.url }}" class="budget-card-maroon" style="text-decoration:none;">
             <div class="budget-card-maroon-inner">
-                <div class="budget-maroon-ornament">✦</div>
-                <div class="budget-maroon-label">{{ range.label }}</div>
+<div class="budget-maroon-label">{{ range.label }}</div>
                 <div class="budget-maroon-cta">
                     <span>Shop Now</span>
                     <span class="budget-maroon-arrow">→</span>

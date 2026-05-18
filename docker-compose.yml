@@ -11,6 +11,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - CATALOG_API_KEY=${CATALOG_API_KEY}
     depends_on:
       - db
 
