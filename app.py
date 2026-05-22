@@ -2030,3 +2030,97 @@ def apiv1_silver_rate():
         'updated_products':   updated_products,
         'updated_at':         Settings.get('silver_rate_updated_at'),
     })
+
+# ═══════════════════════════════════════════════════════════════════════
+#  MOBILE APP — MARKET RESEARCH
+#  POST /api/market-research
+#  Accepts: multipart/form-data with fields:
+#    image    — the jewellery photo (JPEG)
+#    category — e.g. "Ring", "Necklace"
+#    keyword  — optional; filters the search to a specific keyword chip
+#
+#  Uses gemini-2.5-flash with Google Search grounding to:
+#    1. Visually analyse the jewellery photo
+#    2. Search Google Shopping / e-commerce sites live
+#    3. Return keywords, listings, price range, and a market summary
+# ═══════════════════════════════════════════════════════════════════════
+
+@app.route('/api/market-research', methods=['POST'])
+def api_market_research():
+    category = request.form.get('category', 'Jewellery')
+    keyword  = request.form.get('keyword', '').strip() or None
+    image    = request.files.get('image')
+
+    if not image:
+        return jsonify({'success': False, 'error': 'No image provided'}), 400
+
+    try:
+        import base64 as _b64, re as _re
+        img_bytes = image.read()
+        img_b64   = _b64.b64encode(img_bytes).decode()
+
+        filter_note = f'Focus results specifically on: "{keyword}".' if keyword else ''
+
+        prompt = f"""You are a jewellery market research expert for an Indian jewellery seller.
+
+Analyse this {category} image carefully. Then use Google Search to find similar items currently being sold online by other sellers.
+
+{filter_note}
+
+Respond ONLY with this exact JSON structure — no markdown, no explanation, no extra text:
+{{
+  "keywords": ["keyword1", "keyword2", "keyword3"],
+  "summary": "2-sentence market insight covering competition, pricing trends, and demand.",
+  "listings": [
+    {{
+      "title": "Product listing title",
+      "url": "https://actual-listing-url.com/product",
+      "source": "etsy.com",
+      "price": "Rs.1,200",
+      "thumbnail": "https://image-url.com/thumb.jpg"
+    }}
+  ],
+  "price_range": {{ "min": "Rs.500", "max": "Rs.5,000" }}
+}}
+
+Rules:
+- keywords: 8-12 specific tags covering material, style, gemstone, finish, occasion, era, setting type
+- listings: 8-12 real, currently-live results from Google Search — prefer Indian e-commerce (Flipkart, Meesho, Myntra, Amazon.in, Craftsvilla, BlueStone, Tanishq, CaratLane) and international (Etsy, Amazon)
+- price: use INR where possible; otherwise use the currency shown on the listing
+- price_range: computed from the listing prices you found
+- thumbnail: use the actual product image URL from the listing page if available, otherwise null
+- summary: be specific — mention approximate price range, number of sellers, and any trend you notice"""
+
+        from google.genai import types as _gtypes
+
+        response = _genai_client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[
+                _gtypes.Part.from_bytes(data=img_bytes, mime_type='image/jpeg'),
+                prompt,
+            ],
+            config=_gtypes.GenerateContentConfig(
+                tools=[_gtypes.Tool(google_search=_gtypes.GoogleSearch())],
+                temperature=0.2,
+            ),
+        )
+
+        raw = response.text.strip().replace('```json', '').replace('```', '').strip()
+
+        match = _re.search(r'\{[\s\S]*\}', raw)
+        if not match:
+            return jsonify({'success': False, 'error': 'Gemini did not return valid JSON. Raw: ' + raw[:300]}), 500
+
+        parsed = json.loads(match.group(0))
+
+        return jsonify({
+            'success':      True,
+            'keywords':     parsed.get('keywords', []),
+            'summary':      parsed.get('summary', ''),
+            'listings':     parsed.get('listings', []),
+            'seller_count': len(parsed.get('listings', [])),
+            'price_range':  parsed.get('price_range'),
+        })
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
